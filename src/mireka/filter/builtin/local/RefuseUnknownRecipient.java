@@ -9,7 +9,6 @@ import mireka.UnknownUserException;
 import mireka.filter.FilterReply;
 import mireka.filter.StatelessFilterType;
 import mireka.mailaddress.Recipient;
-import mireka.mailaddress.RemotePartContainingRecipient;
 
 public class RefuseUnknownRecipient extends StatelessFilterType {
     private List<RecipientSpecification> specifications =
@@ -28,12 +27,8 @@ public class RefuseUnknownRecipient extends StatelessFilterType {
     }
 
     private boolean isKnown(Recipient recipient) {
-        if (recipient.isGlobalPostmaster())
-            return true;
-        RemotePartContainingRecipient remotePartContainingRecipient =
-                (RemotePartContainingRecipient) recipient;
         for (RecipientSpecification specification : specifications) {
-            if (specification.isSatisfiedBy(remotePartContainingRecipient))
+            if (specification.isSatisfiedBy(recipient))
                 return true;
         }
         return false;

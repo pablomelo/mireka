@@ -3,7 +3,7 @@ package mireka.filter.builtin.local;
 import java.util.ArrayList;
 import java.util.List;
 
-import mireka.mailaddress.RemotePartContainingRecipient;
+import mireka.mailaddress.Recipient;
 
 public class RecipientSpecifications implements RecipientSpecification {
     private List<RecipientSpecification> specifications =
@@ -13,7 +13,7 @@ public class RecipientSpecifications implements RecipientSpecification {
         specifications.add(specification);
     }
     @Override
-    public boolean isSatisfiedBy(RemotePartContainingRecipient recipient) {
+    public boolean isSatisfiedBy(Recipient recipient) {
         for (RecipientSpecification specification : specifications) {
             if (specification.isSatisfiedBy(recipient))
                 return true;

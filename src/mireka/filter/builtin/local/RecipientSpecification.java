@@ -1,7 +1,7 @@
 package mireka.filter.builtin.local;
 
-import mireka.mailaddress.RemotePartContainingRecipient;
+import mireka.mailaddress.Recipient;
 
 public interface RecipientSpecification {
-    public boolean isSatisfiedBy(RemotePartContainingRecipient recipient);
+    public boolean isSatisfiedBy(Recipient recipient);
 }

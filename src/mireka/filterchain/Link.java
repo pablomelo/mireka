@@ -27,7 +27,7 @@ class Link implements FilterChain {
     }
 
     @Override
-    public void from(String from) throws RejectException {
+    public void from(String from) {
         filter.from(from);
     }
 

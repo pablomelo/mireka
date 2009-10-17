@@ -1,5 +1,8 @@
 package mireka.server;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import mireka.filterchain.FilterInstances;
 import mireka.filterchain.Filters;
 
@@ -7,8 +10,10 @@ import org.subethamail.smtp.MessageContext;
 import org.subethamail.smtp.MessageHandler;
 import org.subethamail.smtp.MessageHandlerFactory;
 
+@ApplicationScoped
 public class MessageHandlerFactoryImpl implements MessageHandlerFactory {
 
+	@Inject
     private Filters filters;
 
     @Override

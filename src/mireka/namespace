@@ -7,4 +7,3 @@ mireka.filter.builtin.proxy
 mireka.filter.builtin.spf
 mireka.filterchain
 mireka.server
-mireka.submission
