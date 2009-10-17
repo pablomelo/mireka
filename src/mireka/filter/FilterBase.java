@@ -15,7 +15,7 @@ public interface FilterBase {
 
     void begin();
 
-    void from(String from) throws RejectException;
+    void from(String from);
 
     /**
      * it is not called if a previous filter has already accepted the recipient

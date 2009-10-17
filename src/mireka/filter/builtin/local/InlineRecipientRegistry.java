@@ -7,7 +7,6 @@ import javax.mail.internet.ParseException;
 
 import mireka.mailaddress.Recipient;
 import mireka.mailaddress.MailAddressFactory;
-import mireka.mailaddress.RemotePartContainingRecipient;
 
 public class InlineRecipientRegistry implements RecipientSpecification {
     private final Set<Recipient> recipients = new HashSet<Recipient>();
@@ -23,7 +22,7 @@ public class InlineRecipientRegistry implements RecipientSpecification {
     }
 
     @Override
-    public boolean isSatisfiedBy(RemotePartContainingRecipient recipient) {
+    public boolean isSatisfiedBy(Recipient recipient) {
         return recipients.contains(recipient);
     }
 }
