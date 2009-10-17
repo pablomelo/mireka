@@ -1,0 +1,234 @@
+<?xml version="1.0"?>
+
+<project name="mireka" default="war" basedir=".">
+        <property name="name" value="${ant.project.name}" />
+
+        <property file="user.properties" />
+        <property file="${user.home}/build.properties" />
+        <property file="build.properties" />
+
+        <property name="build.debug" value="on" />
+        <property name="build.deprecation" value="on" />
+
+        <property name="ant.build.javac.target" value="1.6" />
+        <property name="ant.build.javac.source" value="1.6" />
+        <property name="ant.build.javac.encoding" value="UTF-8" />
+
+        <property name="build.dir" location="build" />
+        <property name="build.classes.dir" location="${build.dir}/classes" />
+        <property name="build.war.file" location="${build.dir}/mireka.war" />
+
+        <property name="docs.dir" value="${build.dir}/docs" />
+
+        <property name="resin.dir" location="/java/resin-4.0.0/" />
+        <property name="deploy.dir" location="${resin.dir}/webapps" />
+        <property name="expandedWar.dir" location="${deploy.dir}/mireka" />
+
+        <property name="src.dir" location="src" />
+        <property name="web.dir" location="web" />
+        <property name="lib.dir" location="lib" />
+
+        <tstamp />
+        <tstamp>
+                <format property="YEAR" pattern="yyyy" />
+        </tstamp>
+
+        <path id="compile.classpath">
+                <fileset dir="${lib.dir}">
+                        <include name="**/*.jar" />
+                </fileset>
+
+                <fileset dir="${resin.dir}/lib">
+                        <include name="**/*.jar" />
+                </fileset>
+        </path>
+
+        <path id="javadoc.classpath">
+                <fileset dir="${lib.dir}">
+                        <include name="**/*.jar" />
+                        <exclude name="build-only/**" />
+                </fileset>
+
+                <fileset dir="${resin.dir}/lib">
+                        <include name="**/*.jar" />
+                </fileset>
+        </path>
+
+        <target name="init">
+                <!--		
+<svn><info path="${basedir}" revisionProperty="revisionVersion" /></svn>
+-->
+                <!--  A hack because svnant does not respect Ant's properties can't be overwritten rule. -->
+                <property name="version" value="${revisionVersion}" />
+        </target>
+
+
+        <target name="compile" depends="init">
+                <mkdir dir="${build.classes.dir}" />
+
+                <javac srcdir="${src.dir}"
+                       destdir="${build.classes.dir}"
+                       debug="${build.debug}"
+                       deprecation="${build.deprecation}">
+                        <classpath refid="compile.classpath" />
+                </javac>
+
+                <copy toDir="${build.dir}/classes">
+                        <fileset dir="${src.dir}" excludes="**/*.java" />
+                </copy>
+        </target>
+
+        <target name="war" depends="compile">
+                <war destfile="${build.war.file}" needxmlfile="false">
+
+                        <webinf dir="conf">
+                                <include name="resin-web-pre.xml" />
+                                <include name="resin-web.xml" />
+                        </webinf>
+
+                        <classes dir="${build.classes.dir}" />
+
+                        <classes dir="${src.dir}">
+                                <include name="META-INF/**" />
+                        </classes>
+
+                        <lib dir="${lib.dir}">
+                                <exclude name="build-only/**" />
+                        </lib>
+                </war>
+        </target>
+
+        <target name="deploy"
+                depends="war"
+                description="Deploys war on local app server">
+                <copy file="${build.war.file}" todir="${deploy.dir}" />
+        </target>
+
+        <target name="test.compile" depends="compile">
+                <mkdir dir="${build.dir}/test" />
+                <javac srcdir="${test.dir}"
+                       debug="on"
+                       destdir="${build.dir}/test"
+                       source="1.6"
+                       target="1.6">
+                        <classpath path="${build.dir}/classes" />
+                        <classpath refid="compile.classpath" />
+                </javac>
+                <copy toDir="${build.dir}/test">
+                        <fileset dir="${test.dir}" excludes="**/*.java" />
+                </copy>
+        </target>
+
+        <!-- ================================= 
+          target: test              
+         ================================= -->
+        <target name="test"
+                depends="test.compile"
+                description="Execute JUnit tests.">
+                <junit haltonerror="true" haltonfailure="true">
+                        <classpath>
+                                <pathelement location="${build.dir}/test" />
+                                <pathelement location="${build.dir}/classes" />
+                                <path refid="compile.classpath" />
+                        </classpath>
+                        <batchtest>
+                                <fileset dir="${test.dir}">
+                                        <include name="**/*Test*.java" />
+                                </fileset>
+                        </batchtest>
+                </junit>
+        </target>
+
+        <target name="javadoc" depends="init-dist">
+                <javadoc destdir="${build.dir}/javadoc"
+                         packagenames="*"
+                         classpathref="javadoc.classpath"
+                         author="true"
+                         version="true"
+                         Windowtitle="Mireka ${build.version}"
+                         failonerror="true"
+                         useexternalfile="true">
+                        <fileset dir="${src.dir}">
+                                <include name="**/*.java" />
+                        </fileset>
+
+                        <doctitle>&lt;h1&gt;Mireka ${build.version}&lt;/h1&gt;</doctitle>
+                </javadoc>
+                <fixcrlf srcdir="${build.dir}/javadoc"
+                         includes="**/*.html,**/*.css" />
+        </target>
+
+        <!-- - - - - - - - - - - - - - - - - - 
+          target: doc                      
+         - - - - - - - - - - - - - - - - - -->
+        <target name="doc" depends="clean, init-dist, javadoc">
+                <copy todir="${build.dir}/doc">
+                        <fileset dir="${setup.dir}/doc" />
+                        <fileset dir="${build.dir}">
+                                <include name="javadoc/**" />
+                        </fileset>
+                </copy>
+        </target>
+
+        <!-- - - - - - - - - - - - - - - - - - 
+          target: init-dist                    
+         - - - - - - - - - - - - - - - - - -->
+        <target name="init-dist">
+                <input addproperty="build.version" message="Version number?" />
+                <property name="dist.name" value="${name}-${build.version}" />
+
+                <property name="build.dist.dir"
+                          location="${build.dir}/${name}-${build.version}" />
+                <property name="build.dist.zip"
+                          location="${build.dir}/${dist.name}.zip" />
+        </target>
+
+        <!-- ================================= 
+          target: dist              
+         ================================= -->
+        <target name="dist"
+                depends="clean, init-dist, war, doc"
+                description="Prepares distibution archives using clean build">
+                <copy todir="${build.dist.dir}">
+                        <fileset dir="${setup.dir}">
+                                <exclude name="doc" />
+                        </fileset>
+
+                        <fileset dir="${build.dir}">
+                                <include name="*.war" />
+                                <include name="doc/**" />
+                        </fileset>
+
+                        <fileset dir=".">
+                                <include name="LICENSE.txt" />
+                        </fileset>
+                </copy>
+
+                <dirname property="build.dist.dir.dirname"
+                         file="${build.dist.dir}" />
+                <basename property="build.dist.dir.basename"
+                          file="${build.dist.dir}" />
+
+                <zip zipfile="${build.dist.zip}"
+                     basedir="${build.dist.dir.dirname}">
+                        <include name="${build.dist.dir.basename}/**" />
+                </zip>
+
+                <zip destfile="${build.dir}/${dist.name}-src.zip">
+                        <zipfileset dir="." prefix="${dist.name}-src">
+                                <exclude name="build/**" />
+                                <exclude name="**/.svn" />
+                                <exclude name="temp/**" />
+                                <exclude name="user.properties" />
+                                <exclude name="lib-doc/**" />
+                                <exclude name="requirements.txt" />
+                                <exclude name="todo.txt" />
+                                <exclude name="startDos.bat" />
+                        </zipfileset>
+                </zip>
+        </target>
+
+        <target name="clean" description="Cleans all previous build artifacts">
+                <delete dir="${build.dir}" />
+        </target>
+</project>
