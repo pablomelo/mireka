@@ -1,0 +1,47 @@
+<web-app xmlns="http://caucho.com/ns/resin"
+	xmlns:resin="urn:java:com.caucho.resin"
+	xmlns:mireka="urn:java:mireka"
+	xmlns:subetha="urn:java:org.subethamail.smtp.server"
+	>
+	
+	<system-property mireka.home="${mirekaHome}"/>
+	<system-property logback.configurationFile="${__DIR__}/logback.xml"/>
+	<dependency path="${__DIR__}/logback.xml" />
+
+	<!--
+		uncomment to run the RFC 4409 message submission service
+	-->
+	<!--
+	<system-property messageSubmissionActive="true"/>
+	-->
+		
+	<mireka:BackendServer>
+		<Named>backendServer</Named>
+		
+		<mireka:host>backend.example.com</mireka:host>
+		<mireka:client>
+			<mireka:helo>mx1.example.com</mireka:helo>
+			<!-- <mireka:bind>192.0.2.0</mireka:bind> -->
+		</mireka:client>
+	</mireka:BackendServer>
+	
+	<resin:if test="${messageSubmissionActive}">
+		<!-- 
+			global-users of the submission service are accepted 
+			recipients in the MX service
+		-->  
+		<resin:import path="${__DIR__}/submission/global-users.xml" />
+	</resin:if>
+	
+	<!--
+		uncomment to run the MX proxy
+	-->
+	<!--
+	<resin:import path="${__DIR__}/mx/mx.xml" />
+	-->
+	
+	<resin:if test="${messageSubmissionActive}">	
+		<resin:import path="${__DIR__}/submission/submission.xml" />
+	</resin:if>
+	
+</web-app>
