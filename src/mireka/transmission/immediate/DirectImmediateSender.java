@@ -2,8 +2,6 @@ package mireka.transmission.immediate;
 
 import java.net.InetAddress;
 
-import javax.inject.Inject;
-
 import mireka.address.AddressLiteral;
 import mireka.address.Domain;
 import mireka.address.DomainPart;
@@ -230,7 +228,6 @@ public class DirectImmediateSender implements ImmediateSender {
     }
 
     /** @category GETSET **/
-    @Inject
     public void setClientFactory(ClientFactory clientFactory) {
         this.clientFactory = clientFactory;
     }

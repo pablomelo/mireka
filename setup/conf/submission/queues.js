@@ -55,14 +55,15 @@ mailToHostTransmitter = setup(MailToHostTransmitter, {
 });
 
 immediateSender = setup(DirectImmediateSender, {
-	mailToHostTransmitter: mailToHostTransmitter,
+	clientFactory: clientFactory,
+	mailToHostTransmitter: mailToHostTransmitter
 });
 
-/* uncomment to send all outgoing mails through a smarthost */
+/* uncomment to send all outgoing mails through a smart host */
 /*
-immediateSender = setup(IndirectImmediateSender, {
+immediateSender = setup(NullClientImmediateSender, {
 	mailToHostTransmitter: mailToHostTransmitter,
-	backendServer: backendServer,
+	smartHosts: [ backendServer ],
 });
 */
 
@@ -110,3 +111,4 @@ setup(retryTransmitter, {
 		name: "retry",
 	}),
 });
+
