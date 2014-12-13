@@ -1,0 +1,409 @@
+<?xml version="1.0"?>
+
+<project name="mireka"
+         default="deb"
+         basedir="."
+         xmlns:ivy="antlib:org.apache.ivy.ant">
+	<property name="name" value="${ant.project.name}" />
+
+	<property file="user.properties" />
+	<property file="${user.home}/build.properties" />
+	<property file="build.properties" />
+
+	<property name="build.debug" value="on" />
+	<property name="build.deprecation" value="on" />
+
+	<property name="ant.build.javac.target" value="1.7" />
+	<property name="ant.build.javac.source" value="1.7" />
+	<property name="ant.build.javac.encoding" value="UTF-8" />
+
+	<property name="build.dir" location="build" />
+	<property name="build.classes.dir" location="${build.dir}/classes" />
+
+	<property name="docs.dir" value="${build.dir}/docs" />
+
+	<property name="src.dir" location="src" />
+
+	<path id="compile.classpath">
+		<fileset dir="lib/compile">
+			<include name="**/*.jar" />
+		</fileset>
+		<!-- manually managed dependencies are only stored in the 
+                runtime directory, even if they are also a compile time 
+                dependency -->
+		<fileset dir="lib/runtime">
+			<include name="*.jar" />
+		</fileset>
+	</path>
+
+	<path id="test.compile.classpath">
+		<path refid="compile.classpath" />
+		<pathelement location="build/classes" />
+		<fileset dir="lib/build" includes="**/*.jar" />
+	</path>
+
+	<path id="javadoc.classpath">
+		<fileset dir="lib/compile" includes="**/*.jar" />
+		<fileset dir="lib/runtime" includes="*.jar" />
+	</path>
+
+	<taskdef classname="net.bluecow.googlecode.ant.GoogleCodeUploadTask"
+	         classpath="lib/build/ant-googlecode-0.0.2.jar"
+	         name="gcupload" />
+
+	<taskdef resource="org/apache/ivy/ant/antlib.xml"
+	         uri="antlib:org.apache.ivy.ant"
+	         classpath="lib/build/ivy-2.2.0.jar">
+	</taskdef>
+
+	<taskdef name="deb"
+	         classname="com.googlecode.ant_deb_task.Deb"
+	         classpath="lib/build/ant-deb-patched.jar" />
+
+	<target name="init">
+		<!--		
+<svn><info path="${basedir}" revisionProperty="revisionVersion" /></svn>
+-->
+		<!--  A hack because svnant does not respect Ant's properties can't be overwritten rule. -->
+		<property name="version" value="${revisionVersion}" />
+	</target>
+
+	<!-- ================================= 
+                  target: resolve              
+                 ================================= -->
+	<target name="resolve" description="Retrieve dependencies with Ivy">
+		<ivy:configure file="ivysettings.xml" />
+		<ivy:retrieve pattern="lib/[conf]/ivy/[artifact]-[revision](-[classifier]).[ext]" />
+		<ivy:report todir="build/ivy-report" graph="false" />
+	</target>
+
+	<!-- ================================= 
+                  target: dependency.clean              
+                 ================================= -->
+	<target name="dependency.clean"
+	        description="Removes dependencies managed by Ivy">
+		<delete dir="lib" includes="*/ivy/*.jar" />
+	</target>
+
+	<target name="compile" depends="init">
+		<mkdir dir="${build.classes.dir}" />
+
+		<javac srcdir="${src.dir}"
+		       destdir="${build.classes.dir}"
+		       debug="${build.debug}"
+		       deprecation="${build.deprecation}"
+		       includeantruntime="false">
+			<classpath refid="compile.classpath" />
+		</javac>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: jar                      
+         - - - - - - - - - - - - - - - - - -->
+	<target name="jar" depends="compile">
+		<jar destfile="build/mireka.jar">
+			<manifest>
+				<attribute name="Implementation-Title" value="Mireka" />
+				<attribute name="Implementation-Version"
+				           value="${build.version}" />
+			</manifest>
+
+			<fileset dir="${build.classes.dir}" />
+
+			<fileset dir="src" includes="mireka/namespace" />
+		</jar>
+	</target>
+
+	<target name="deploy"
+	        depends="jar"
+	        description="Deploys jar on local server">
+		<property name="deploy.dir" location="temp/installed" />
+		<copy file="build/mireka.jar" todir="${deploy.dir}/lib" />
+	</target>
+
+	<target name="test.compile" depends="compile">
+		<mkdir dir="${build.dir}/test" />
+		<javac srcdir="${test.dir}"
+		       debug="on"
+		       destdir="${build.dir}/test"
+		       includeantruntime="false">
+			<classpath refid="test.compile.classpath" />
+		</javac>
+		<copy toDir="${build.dir}/test">
+			<fileset dir="${test.dir}" excludes="**/*.java" />
+		</copy>
+	</target>
+
+	<!-- ================================= 
+          target: test              
+         ================================= -->
+	<target name="test"
+	        depends="test.compile"
+	        description="Execute JUnit tests according to all.test and test properties">
+		<condition property="quick.tests">
+			<not>
+				<or>
+					<isset property="all.test" />
+					<isset property="test" />
+				</or>
+			</not>
+		</condition>
+		<mkdir dir="build/junit" />
+		<junit haltonerror="true"
+		       haltonfailure="true"
+		       fork="true"
+		       forkmode="once"
+		       printsummary="yes">
+			<sysproperty key="jmockit-coverage-outputDir"
+			             file="build/coverage-report" />
+			<classpath>
+				<pathelement location="lib/build/jmockit.jar" />
+				<pathelement location="${build.dir}/test" />
+				<pathelement location="${build.dir}/classes" />
+				<pathelement location="${build.dir}/version" />
+				<fileset dir="lib/build">
+					<include name="**/*.jar" />
+					<exclude name="jmockit.jar" />
+				</fileset>
+				<fileset dir="lib/runtime" includes="**/*.jar" />
+			</classpath>
+			<test name="mireka.QuickTests"
+			      todir="build/junit"
+			      if="quick.tests" />
+			<test name="${test}" todir="build/junit" if="test" />
+			<batchtest if="all.test" todir="build/junit">
+				<fileset dir="${test.dir}">
+					<include name="**/*Test*.java" />
+					<!-- it seems it takes very long if coverage information is collected -->
+					<exclude name="**/DnsMailCreatorLargeOriginalTest.java" />
+				</fileset>
+			</batchtest>
+			<formatter type="plain" />
+		</junit>
+	</target>
+
+	<!-- ================================= 
+          target: all.test              
+         ================================= -->
+	<target name="all.test" depends="" description="Execute all JUnit tests">
+		<antcall target="test">
+			<param name="all.test" value="true" />
+		</antcall>
+	</target>
+
+
+	<target name="javadoc" depends="init-dist">
+		<javadoc destdir="${build.dir}/javadoc"
+		         packagenames="*"
+		         classpathref="javadoc.classpath"
+		         author="true"
+		         version="true"
+		         Windowtitle="Mireka ${build.version}"
+		         Use="true"
+		         breakiterator="true"
+		         noqualifier="java.lang"
+		         failonerror="true"
+		         useexternalfile="true">
+			<fileset dir="${src.dir}">
+				<include name="**/*.java" />
+			</fileset>
+
+			<doctitle>&lt;h1&gt;Mireka ${build.version}&lt;/h1&gt;</doctitle>
+			<tag name="category" />
+			<excludepackage name="org.subethamail.smtp.*" />
+		</javadoc>
+		<fixcrlf srcdir="${build.dir}/javadoc" includes="**/*.html,**/*.css" />
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: doc                      
+         - - - - - - - - - - - - - - - - - -->
+	<target name="doc" depends="clean, init-dist, javadoc">
+		<copy todir="${build.dir}/doc">
+			<fileset dir="${setup.dir}/doc" />
+			<fileset dir="${build.dir}">
+				<include name="javadoc/**" />
+			</fileset>
+		</copy>
+	</target>
+
+	<!-- - - - - - - - - - - - - - - - - - 
+          target: init-dist                    
+         - - - - - - - - - - - - - - - - - -->
+	<target name="init-dist">
+		<property name="dist.name" value="${name}-${build.version}" />
+
+		<property name="build.dist.dir"
+		          location="${build.dir}/${name}-${build.version}" />
+		<property name="build.dist.zip"
+		          location="${build.dir}/${dist.name}.zip" />
+	</target>
+
+	<!-- ================================= 
+          target: dist              
+         ================================= -->
+	<target name="dist"
+	        depends="clean, init-dist, jar, doc"
+	        description="Prepares distibution archives using clean build">
+		<copy todir="${build.dist.dir}">
+			<fileset dir="${setup.dir}">
+				<exclude name="doc" />
+				<exclude name="bin" />
+			</fileset>
+
+			<fileset dir="${build.dir}">
+				<include name="doc/**" />
+			</fileset>
+
+			<fileset dir=".">
+				<include name="LICENSE.txt" />
+			</fileset>
+		</copy>
+
+		<fixcrlf srcdir="${setup.dir}/bin"
+		         destdir="${build.dist.dir}/bin"
+		         includes="*.sh"
+		         eol="unix" />
+
+		<fixcrlf srcdir="${setup.dir}/bin"
+		         destdir="${build.dist.dir}/bin"
+		         includes="*.bat"
+		         eol="dos" />
+
+		<fixcrlf srcdir="${build.dist.dir}/doc/examples/daemon"
+		         includes="*.sh"
+		         eol="unix" />
+
+		<copy todir="${build.dist.dir}/lib" flatten="true">
+			<fileset dir="lib/runtime" includes="**/*.jar" />
+			<fileset file="build/mireka.jar" />
+		</copy>
+
+		<dirname property="build.dist.dir.dirname" file="${build.dist.dir}" />
+		<basename property="build.dist.dir.basename" file="${build.dist.dir}" />
+
+		<zip zipfile="${build.dist.zip}" basedir="${build.dist.dir.dirname}">
+			<include name="${build.dist.dir.basename}/**" />
+		</zip>
+
+		<zip destfile="${build.dir}/${dist.name}-src.zip">
+			<zipfileset dir="." prefix="${dist.name}-src">
+				<exclude name="build/**" />
+				<exclude name="**/.svn" />
+				<exclude name="temp/**" />
+				<exclude name="user.properties" />
+				<exclude name="lib-doc/**" />
+				<exclude name="requirements.txt" />
+				<exclude name="todo.txt" />
+				<exclude name="startDos.bat" />
+			</zipfileset>
+		</zip>
+	</target>
+
+	<!-- ================================= 
+          target: deb              
+         ================================= -->
+	<target name="deb"
+	        depends="dist"
+	        description="Creates an Ubuntu software package">
+		<local name="unpacked" />
+		<property name="unpacked" location="build/dist/ubuntu/unpacked" />
+		
+		<!-- /etc/init -->
+		<mkdir dir="${unpacked}" />
+		<fixcrlf srcdir="package/ubuntu"
+		         destdir="${unpacked}"
+		         encoding="UTF-8"
+		         eol="unix" />
+		<!-- /etc/${name} -->
+		<mkdir dir="${unpacked}/etc/${name}" />
+		<fixcrlf srcdir="${build.dist.dir}/conf"
+		         destdir="${unpacked}/etc/${name}"
+		         encoding="UTF-8"
+		         eol="unix" />
+		<!-- /usr/share/${name}/lib -->
+		<mkdir dir="${unpacked}/usr/share/${name}/lib" />
+		<fixcrlf srcdir="${build.dist.dir}/lib"
+		         includes="*.js"
+		         destdir="${unpacked}/usr/share/${name}/lib"
+		         encoding="UTF-8"
+		         eol="unix" />
+		<copy todir="${unpacked}/usr/share/${name}/lib">
+			<fileset dir="${build.dist.dir}/lib" includes="*.jar"/>
+		</copy>
+		<!-- /usr/share/doc/${name} -->
+		<mkdir dir="${unpacked}/usr/share/doc/${name}" />
+		<fixcrlf file="LICENSE.txt"
+		         destdir="${unpacked}/usr/share/doc/${name}"
+		         encoding="UTF-8"
+		         eol="unix" />
+		<fixcrlf srcdir="${build.dist.dir}/doc"
+		         includes="**/*.html,**/*.css"
+		         destdir="${unpacked}/usr/share/doc/${name}"
+		         encoding="UTF-8"
+		         eol="unix" />
+		<copy todir="${unpacked}/usr/share/doc/${name}">
+			<fileset dir="${build.dist.dir}/doc" excludes="**/*.html,**/*.css" />
+		</copy>
+
+		<deb todir="build/dist/ubuntu"
+		     package="${name}"
+		     debFilenameProperty="debFilename"
+		     section="mail"
+		     architecture="all"
+		     depends="adduser, authbind, java7-runtime-headless | openjdk-7-jre-headless, upstart-job"
+		     postinst="${unpacked}/control/postinst"
+		     prerm="${unpacked}/control/prerm"
+		     postrm="${unpacked}/control/postrm">
+
+			<version upstream="${build.version}" />
+			<maintainer name="Hontvari Jozsef Levente"
+			            email="hontvari@flyordie.com" />
+			<description synopsis="Mail server and SMTP proxy">
+				Mireka is a mail server with SMTP, Message Submission and POP3 services. It is also an SMTP proxy.
+			</description>
+			<!-- everything except control and configuration files  -->
+			<tarfileset dir="${unpacked}"
+			            excludes="control/**,etc/${name}/**,etc/init/${name}.conf"
+			            prefix="/" />
+			<!-- /etc/${name} -->
+			<conffiles dir="${unpacked}"
+			           includes="etc/${name}/**,etc/init/${name}.conf"
+			           prefix="/" />
+		</deb>
+	</target>
+
+	<!-- ================================= 
+          target: release              
+         ================================= -->
+	<target name="release"
+	        depends="clean, dist, deb, test"
+	        description="Uploads release archives to Google Code">
+		<basename file="${debFilename}" property="debFileBasename"/>
+		<gcupload username="${gc.username}"
+		          password="${gc.password}"
+		          projectname="mireka"
+		          filename="${debFilename}"
+		          targetfilename="${debFileBasename}"
+		          summary="Mireka ${build.version} deb package for Ubuntu"
+		          labels="Type-Package, OpSys-Ubuntu" />
+		<gcupload username="${gc.username}"
+		          password="${gc.password}"
+		          projectname="mireka"
+		          filename="${build.dir}/${dist.name}-src.zip"
+		          targetfilename="${dist.name}-src.zip"
+		          summary="Mireka ${build.version} Source"
+		          labels="Type-Source" />
+		<gcupload username="${gc.username}"
+		          password="${gc.password}"
+		          projectname="mireka"
+		          filename="${build.dir}/${dist.name}.zip"
+		          targetfilename="${dist.name}.zip"
+		          summary="Mireka ${build.version}"
+		          labels="Featured, Type-Archive, OpSys-All" />
+	</target>
+
+	<target name="clean" description="Cleans all previous build artifacts">
+		<delete dir="${build.dir}" />
+	</target>
+</project>
