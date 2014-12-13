@@ -28,21 +28,19 @@ System.setProperty("javax.net.ssl.keyStorePassword", "changeit");
 	Default SMTP client factory, it specifies the properties of the 
 	outgoing SMTP connections.
 */
-clientFactory = setupDefault(ClientFactory, {
+clientFactory = setup(ClientFactory, {
 	helo: helo,
 	// bind: "192.0.2.0",
 });
 
 /*
 	Default backend server. It specifies an SMTP server, to where 
-	mails are relayed for delivery or submission. It is used in 
-	both proxy and null client mode.
+	mails are relayed for delivery or submission. It can be 
+	referred where SMTP proxy functionality is configured. 
 */
 backendServer = setup(BackendServer, {
 	host: "backend.example.com",
-	//port: 587,
-	//user: "office-server",
-	//password: "CHANGEIT",
+	clientFactory: clientFactory 
 });
 
 /*
@@ -124,3 +122,5 @@ setup(GraphiteReporter, {
 	prefix: "mail.mireka"
 });
 */
+	
+

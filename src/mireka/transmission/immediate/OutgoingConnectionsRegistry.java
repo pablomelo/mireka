@@ -1,4 +1,4 @@
-package mireka.transmission.immediate.host;
+package mireka.transmission.immediate;
 
 import java.net.InetAddress;
 import java.util.HashMap;
@@ -8,7 +8,6 @@ import java.util.Random;
 import javax.annotation.concurrent.GuardedBy;
 
 import mireka.smtp.EnhancedStatus;
-import mireka.transmission.immediate.PostponeException;
 
 /**
  * OutgoingConnectionsRegistry can tell if too many connections are open to a

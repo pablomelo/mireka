@@ -5,7 +5,6 @@ import java.util.Arrays;
 import java.util.List;
 
 import mireka.address.Recipient;
-import mireka.smtp.SendException;
 import mireka.transmission.LocalMailSystemException;
 import mireka.transmission.Mail;
 import mireka.transmission.Transmitter;
@@ -17,6 +16,7 @@ import mireka.transmission.immediate.PostponeException;
 import mireka.transmission.immediate.RecipientRejection;
 import mireka.transmission.immediate.RecipientsWereRejectedException;
 import mireka.transmission.immediate.RemoteMtaErrorResponseException;
+import mireka.transmission.immediate.SendException;
 
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
@@ -31,8 +31,7 @@ import org.slf4j.LoggerFactory;
 public class RetryPolicy {
     private final Logger logger = LoggerFactory.getLogger(RetryPolicy.class);
     private List<Period> retryPeriods = Arrays.asList(Period.minutes(3),
-            Period.minutes(3), Period.minutes(9), Period.minutes(15),
-            Period.minutes(30), Period.hours(2),
+            Period.minutes(27), Period.minutes(30), Period.hours(2),
             Period.hours(2), Period.hours(2), Period.hours(2), Period.hours(2),
             Period.hours(2), Period.hours(2), Period.hours(2), Period.hours(2),
             Period.hours(2), Period.hours(3));
@@ -41,7 +40,7 @@ public class RetryPolicy {
      * delayed DSN mail must be sent. For example 3 means that a DSN must be
      * issued after the third failed attempt.
      */
-    private final List<Integer> delayReportPoints = new ArrayList<Integer>();
+    private List<Integer> delayReportPoints = new ArrayList<Integer>();
     private DsnMailCreator dsnMailCreator;
     private Transmitter dsnTransmitter;
     private Transmitter retryTransmitter;
@@ -107,7 +106,7 @@ public class RetryPolicy {
             SendException sendException =
                     new SendException(
                             "Too much postponings of delivery attempt, attempt is considered to be a failure.",
-                            e, e.getEnhancedStatus());
+                            e, e.getEnhancedStatus(), e.getRemoteMta());
             EntireMailFailureHandler failureHandler =
                     new EntireMailFailureHandler(mail, sendException);
             failureHandler.onFailure();
@@ -207,13 +206,13 @@ public class RetryPolicy {
         protected final Mail mail;
 
         private List<SendingFailure> failures;
-        private final List<SendingFailure> permanentFailures =
+        private List<SendingFailure> permanentFailures =
                 new ArrayList<SendingFailure>();
-        private final List<SendingFailure> transientFailures =
+        private List<SendingFailure> transientFailures =
                 new ArrayList<SendingFailure>();
-        private final List<PermanentFailureReport> permanentFailureReports =
+        private List<PermanentFailureReport> permanentFailureReports =
                 new ArrayList<PermanentFailureReport>();
-        private final List<DelayReport> delayReports = new ArrayList<DelayReport>();
+        private List<DelayReport> delayReports = new ArrayList<DelayReport>();
 
         public FailureHandler(Mail mail) {
             this.mail = mail;
@@ -263,13 +262,11 @@ public class RetryPolicy {
             SendException exception = failure.exception;
             report.recipient = failure.recipient;
             report.status = exception.errorStatus();
-            if (exception instanceof RemoteMtaErrorResponseException) {
-                RemoteMtaErrorResponseException rmerException =
-                        (RemoteMtaErrorResponseException) exception;
-                report.remoteMta = rmerException.remoteMta();
+            report.remoteMta = exception.remoteMta();
+            if (exception instanceof RemoteMtaErrorResponseException)
                 report.remoteMtaDiagnosticStatus =
-                        rmerException.remoteMtaStatus();
-            }
+                        ((RemoteMtaErrorResponseException) exception)
+                                .remoteMtaStatus();
             report.failureDate = exception.failureDate;
             report.logId = exception.getLogId();
         }
@@ -293,9 +290,9 @@ public class RetryPolicy {
             if (reports.isEmpty())
                 return;
             if (mail.from.isNull()) {
-                logger.error("Failure or delay, but reverse-path is null, "
+                logger.debug("Failure or delay, but reverse-path is null, "
                         + "DSN must not be sent. "
-                        + "Original mail itself was a notification. {}", mail.toString());
+                        + "Original mail itself was a notification.");
                 return;
             }
             Mail dsnMail = dsnMailCreator.create(mail, reports);

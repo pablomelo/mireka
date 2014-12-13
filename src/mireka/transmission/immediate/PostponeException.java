@@ -1,7 +1,6 @@
 package mireka.transmission.immediate;
 
 import mireka.smtp.EnhancedStatus;
-import mireka.smtp.client.MtaAddress;
 
 /**
  * Indicates that the specific host, must not be connected at this time, because
@@ -14,7 +13,7 @@ public class PostponeException extends Exception {
     private static final long serialVersionUID = 9171565056859085240L;
     private final int recommendedDelay;
     private final EnhancedStatus enhancedStatus;
-    private MtaAddress remoteMta;
+    private RemoteMta remoteMta;
 
     /**
      * Construct a new exception without a remote MTA, which must be set later.
@@ -45,14 +44,15 @@ public class PostponeException extends Exception {
     /**
      * Sets the remote MTA which will be returned by {@link #getRemoteMta()}
      */
-    public void setRemoteMta(MtaAddress remoteMta) {
+    public void setRemoteMta(RemoteMta remoteMta) {
         this.remoteMta = remoteMta;
     }
 
     /**
-     * Returns the remote MTA for which the connection must be postponed.
+     * Returns the remote MTA for which the connection must be postponed, or one
+     * of the MTA hosts if there are more.
      */
-    public MtaAddress getRemoteMta() {
+    public RemoteMta getRemoteMta() {
         return remoteMta;
     }
 

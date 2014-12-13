@@ -7,7 +7,7 @@ import javax.annotation.Nullable;
 import mireka.address.Recipient;
 import mireka.smtp.EnhancedStatus;
 import mireka.smtp.MailSystemStatus;
-import mireka.smtp.client.MtaAddress;
+import mireka.transmission.immediate.RemoteMta;
 
 /**
  * RecipientProblemReport contains information necessary to produce the
@@ -30,7 +30,7 @@ public abstract class RecipientProblemReport {
     @Nullable
     public MailSystemStatus remoteMtaDiagnosticStatus;
     @Nullable
-    public MtaAddress remoteMta;
+    public RemoteMta remoteMta;
     public Date failureDate;
     public String logId;
 

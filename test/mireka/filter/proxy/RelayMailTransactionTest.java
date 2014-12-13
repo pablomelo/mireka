@@ -5,14 +5,13 @@ import mireka.ExampleMail;
 import mireka.address.NullReversePath;
 import mireka.destination.Session;
 import mireka.filter.RecipientContext;
-import mireka.smtp.client.BackendServer;
-import mireka.smtp.client.SmtpClient;
 import mockit.Expectations;
 import mockit.Mocked;
 import mockit.NonStrict;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.subethamail.smtp.client.SmartClient;
 
 public class RelayMailTransactionTest {
     @Mocked
@@ -20,11 +19,11 @@ public class RelayMailTransactionTest {
 
     @NonStrict
     @Mocked(stubOutClassInitialization = false)
-    private SmtpClient client;
+    private SmartClient smartClient;
 
-    private final RecipientContext recipientContextJane = new RecipientContext(null,
+    private RecipientContext recipientContextJane = new RecipientContext(null,
             ExampleAddress.JANE_AS_RECIPIENT);
-    private final RecipientContext recipientContextJohn = new RecipientContext(null,
+    private RecipientContext recipientContextJohn = new RecipientContext(null,
             ExampleAddress.JOHN_AS_RECIPIENT);
 
     private Session session;
@@ -41,13 +40,13 @@ public class RelayMailTransactionTest {
 
         new Expectations() {
             {
-                backendServer.createClient();
-                result = client;
+                backendServer.connect();
+                result = smartClient;
 
-                client.dataEnd();
+                smartClient.dataEnd();
                 times = 1;
 
-                client.quit();
+                smartClient.quit();
             }
         };
 
@@ -61,12 +60,12 @@ public class RelayMailTransactionTest {
 
         new Expectations() {
             {
-                backendServer.createClient();
-                result = client;
+                backendServer.connect();
+                result = smartClient;
 
-                client.to(anyString);
+                smartClient.to(anyString);
                 times = 2;
-                client.dataEnd();
+                smartClient.dataEnd();
                 times = 1;
             }
         };

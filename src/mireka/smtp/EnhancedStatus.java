@@ -4,12 +4,14 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.StringReader;
 
+import mireka.transmission.immediate.ResponseParser;
 import mireka.transmission.immediate.Rfc821Status;
 import mireka.util.Multiline;
 
 /**
  * These class represents an SMTP status which includes enhanced status code.
  * 
+ * @see ResponseParser
  * @see <a href="http://tools.ietf.org/html/rfc3463">RFC 3463 - Enhanced Mail
  *      System Status Codes</a>
  * @see <a href="http://tools.ietf.org/html/rfc2034">RFC 2034 - SMTP Service
@@ -74,7 +76,6 @@ public class EnhancedStatus implements MailSystemStatus {
                     + Integer.toString(smtpReplyCode));
     }
 
-    @Override
     public int getSmtpReplyCode() {
         return smtpReplyCode;
     }
@@ -83,7 +84,6 @@ public class EnhancedStatus implements MailSystemStatus {
         return enhancedStatusCode;
     }
 
-    @Override
     public String getMessage() {
         return message;
     }

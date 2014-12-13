@@ -1,4 +1,4 @@
-package mireka.transmission.immediate.direct;
+package mireka.transmission.immediate;
 
 import static mireka.ExampleAddress.*;
 import static org.junit.Assert.*;
@@ -10,59 +10,49 @@ import mireka.ExampleMail;
 import mireka.address.Domain;
 import mireka.address.Recipient;
 import mireka.smtp.EnhancedStatus;
-import mireka.smtp.SendException;
-import mireka.smtp.client.ClientFactory;
-import mireka.smtp.client.MtaAddress;
-import mireka.smtp.client.SmtpClient;
 import mireka.transmission.Mail;
-import mireka.transmission.immediate.DirectImmediateSender;
-import mireka.transmission.immediate.PostponeException;
-import mireka.transmission.immediate.RecipientsWereRejectedException;
 import mireka.transmission.immediate.dns.AddressLookup;
+import mireka.transmission.immediate.dns.AddressLookupFactory;
 import mireka.transmission.immediate.dns.MxLookup;
-import mireka.transmission.immediate.host.MailToHostTransmitter;
+import mireka.transmission.immediate.dns.MxLookupFactory;
 import mockit.Expectations;
-import mockit.Injectable;
 import mockit.Mocked;
 import mockit.NonStrictExpectations;
-import mockit.Tested;
-import mockit.Verifications;
 
 import org.junit.Before;
 import org.junit.Test;
 import org.xbill.DNS.Name;
 
-public class DirectImmediateSenderTest {
+public class ImmediateSenderTest {
 
-    @Tested
-    private DirectImmediateSender sender;
-    
-    /** Automatically created by constructor, cannot be @Injected **/
+    @Mocked
+    private MxLookupFactory mxLookupFactory;
+
     @Mocked
     private MxLookup mxLookup;
 
-    /** Automatically created by constructor, cannot be @Injected **/
+    @Mocked
+    private AddressLookupFactory addressLookupFactory;
+
     @Mocked
     private AddressLookup addressLookup;
 
-    @Injectable
-    private ClientFactory clientFactory;
-    
     @Mocked
-    private SmtpClient client;
-    
-    @Injectable
-    private MailToHostTransmitter mailToHostTransmitter;
-    
+    private MailToHostTransmitterFactory mailToHostTransmitterFactory;
 
-    private final Mail mail = ExampleMail.simple();
+    @Mocked
+    private MailToHostTransmitter mailToHostTransmitter;
+
+    private Mail mail = ExampleMail.simple();
     private Mail adaAddressLiteralMail;
     private Mail janeJoeMail;
 
-    private final SendException permanentSendException = new SendException(
+    private ImmediateSender sender;
+
+    private SendException permanentSendException = new SendException(
             "Example permanent failure",
             EnhancedStatus.PERMANENT_UNABLE_TO_ROUTE);
-    private final SendException transientSendException = new SendException(
+    private SendException transientSendException = new SendException(
             "Example transient failure",
             EnhancedStatus.TRANSIENT_LOCAL_ERROR_IN_PROCESSING);
     private static final PostponeException POSTPONE_EXCEPTION =
@@ -79,11 +69,20 @@ public class DirectImmediateSenderTest {
         janeJoeMail = ExampleMail.simple();
         janeJoeMail.recipients =
                 Arrays.asList(JANE_AS_RECIPIENT, JOHN_AS_RECIPIENT);
-        
+        sender =
+                new ImmediateSender(mxLookupFactory, addressLookupFactory,
+                        mailToHostTransmitterFactory);
+
         new NonStrictExpectations() {
             {
-                clientFactory.create();
-                result = client;
+                mailToHostTransmitterFactory.create((RemoteMta) any);
+                result = mailToHostTransmitter;
+
+                mxLookupFactory.create((Domain) any);
+                result = mxLookup;
+
+                addressLookupFactory.create((Name) any);
+                result = addressLookup;
             }
         };
     }
@@ -91,22 +90,19 @@ public class DirectImmediateSenderTest {
     @Test
     public void testSendToAddressLiteralVerifyNoDns() throws SendException,
             RecipientsWereRejectedException, PostponeException {
-
-        sender.send(adaAddressLiteralMail);
-        
-        new Verifications() {
+        new Expectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 times = 0;
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 times = 0;
 
-                mailToHostTransmitter.transmit((Mail) any, null);
-                
-                client.setMtaAddress(new MtaAddress(ADDRESS_LITERAL, IP));
+                mailToHostTransmitter.transmit((Mail) any, IP);
             }
         };
+
+        sender.send(adaAddressLiteralMail);
     }
 
     @Test
@@ -114,19 +110,18 @@ public class DirectImmediateSenderTest {
             RecipientsWereRejectedException, PostponeException {
         new Expectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 result = new Name[] { HOST1_EXAMPLE_COM_NAME };
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 result = new InetAddress[] { IP_ADDRESS_ONLY };
 
-                client.setMtaAddress(new MtaAddress("host1.example.com", IP));
-                
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, IP_ADDRESS_ONLY);
             }
         };
 
         sender.send(mail);
+
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -150,18 +145,16 @@ public class DirectImmediateSenderTest {
             RecipientsWereRejectedException, PostponeException {
         new Expectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 result =
                         new Name[] { HOST1_EXAMPLE_COM_NAME,
                                 HOST2_EXAMPLE_COM_NAME };
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 result = permanentSendException;
                 result = new InetAddress[] { IP2 };
 
-                client.setMtaAddress(new MtaAddress("host2.example.com", IP2));
-                
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, IP2);
             }
         };
 
@@ -175,10 +168,10 @@ public class DirectImmediateSenderTest {
 
         new Expectations() {
             {
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = transientSendException;
 
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = null;
             }
         };
@@ -190,13 +183,13 @@ public class DirectImmediateSenderTest {
     private void twoMxDnsExpectation() throws SendException {
         new NonStrictExpectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 result =
                         new Name[] { HOST1_EXAMPLE_COM_NAME,
                                 HOST2_EXAMPLE_COM_NAME };
                 times = 1;
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 result = new InetAddress[] { IP1 };
                 result = new InetAddress[] { IP2 };
                 times = 2;
@@ -209,15 +202,15 @@ public class DirectImmediateSenderTest {
             RecipientsWereRejectedException, PostponeException {
         new Expectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 result =
                         new Name[] { HOST1_EXAMPLE_COM_NAME,
                                 HOST2_EXAMPLE_COM_NAME };
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 result = new InetAddress[] { IP1 };
 
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = permanentSendException;
             }
         };
@@ -232,10 +225,10 @@ public class DirectImmediateSenderTest {
         twoMxDnsExpectation();
         new Expectations() {
             {
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = transientSendException;
 
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = permanentSendException;
             }
         };
@@ -255,10 +248,10 @@ public class DirectImmediateSenderTest {
         twoMxDnsExpectation();
         new Expectations() {
             {
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = POSTPONE_EXCEPTION;
 
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = null;
             }
         };
@@ -274,10 +267,10 @@ public class DirectImmediateSenderTest {
         twoMxDnsExpectation();
         new Expectations() {
             {
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = POSTPONE_EXCEPTION;
 
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = transientSendException;
             }
         };
@@ -296,10 +289,10 @@ public class DirectImmediateSenderTest {
         twoMxDnsExpectation();
         new Expectations() {
             {
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = POSTPONE_EXCEPTION;
 
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, (InetAddress) any);
                 result = POSTPONE_EXCEPTION;
             }
         };
@@ -313,10 +306,10 @@ public class DirectImmediateSenderTest {
             PostponeException {
         new Expectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 result = new Name[] { HOST1_EXAMPLE_COM_NAME };
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 result = permanentSendException;
             }
         };
@@ -335,10 +328,10 @@ public class DirectImmediateSenderTest {
             PostponeException {
         new Expectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 result = new Name[] { HOST1_EXAMPLE_COM_NAME };
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 result = transientSendException;
             }
         };
@@ -356,13 +349,13 @@ public class DirectImmediateSenderTest {
             RecipientsWereRejectedException, PostponeException {
         new Expectations() {
             {
-                mxLookup.queryMxTargets((Domain)any);
+                mxLookup.queryMxTargets();
                 result = new Name[] { HOST1_EXAMPLE_COM_NAME };
 
-                addressLookup.queryAddresses((Name)any);
+                addressLookup.queryAddresses();
                 result = new InetAddress[] { IP1 };
 
-                mailToHostTransmitter.transmit((Mail) any, null);
+                mailToHostTransmitter.transmit((Mail) any, IP1);
                 result = POSTPONE_EXCEPTION;
             }
         };

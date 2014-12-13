@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import mireka.address.Recipient;
-import mireka.smtp.client.BackendServer;
 
 import org.subethamail.smtp.RejectException;
 import org.subethamail.smtp.TooMuchDataException;

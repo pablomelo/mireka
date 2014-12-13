@@ -4,9 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import mireka.address.Recipient;
-import mireka.smtp.SendException;
-import mireka.smtp.client.BackendServer;
-import mireka.smtp.client.SmtpClient;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,14 +32,8 @@ class ClientWithProxyErrorHandling {
 
     private SmartClient connect() throws BackendRejectException,
             RejectException {
-        SmtpClient client;
         try {
-            client = backend.createClient();
-        } catch (SendException e) {
-            throw new RejectException(e.errorStatus().getSmtpReplyCode(), e.errorStatus().getMessage());
-        }
-        try {
-            client.connect();
+            return backend.connect();
         } catch (SMTPException e) {
             throw new BackendRejectException(e,
                     " - Backend rejected connection");
@@ -51,7 +42,6 @@ class ClientWithProxyErrorHandling {
                     "Error while communicating with " + backend.toString(), e);
             throw new RejectException(451, "Local error in processing.");
         }
-        return client;
     }
 
     public void from(String from) throws BackendRejectException,

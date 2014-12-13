@@ -28,16 +28,14 @@ importPackage(Packages.mireka.login);
 importPackage(Packages.mireka.pop);
 importPackage(Packages.mireka.pop.store);
 importPackage(Packages.mireka.smtp);
-importPackage(Packages.mireka.smtp.client);
 importPackage(Packages.mireka.smtp.server);
 importPackage(Packages.mireka.startup);
 importPackage(Packages.mireka.submission);
 importPackage(Packages.mireka.transmission);
 importPackage(Packages.mireka.transmission.dsn);
-importPackage(Packages.mireka.transmission.immediate);
-importPackage(Packages.mireka.transmission.immediate.host);
 importPackage(Packages.mireka.transmission.queue);
 importPackage(Packages.mireka.transmission.queuing);
+importPackage(Packages.mireka.transmission.immediate);
 
 /*
  * Make the include function global. The include function reads and executes
@@ -109,9 +107,9 @@ function setup(bean, content) {
 }
 
 /*
- * Makes the object available for injection. The object will be used as a default
- * value for configuration object properties which are marked with an @Inject 
- * annotation.
+ * Makes the object available for injection. These object are used as default
+ * values for those properties of the configuration objects that which are
+ * marked with an @Inject annotation .
  */
 function useAsDefault(object) {
 	configuration.addInjectableObject(object);
