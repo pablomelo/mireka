@@ -2,16 +2,15 @@ package mireka.filterchain;
 
 import java.io.IOException;
 
+import org.subethamail.smtp.RejectException;
+import org.subethamail.smtp.TooMuchDataException;
+
 import mireka.MailData;
-import mireka.address.ReversePath;
+import mireka.address.Recipient;
 import mireka.filter.Filter;
 import mireka.filter.FilterChain;
 import mireka.filter.FilterReply;
 import mireka.filter.MailTransaction;
-import mireka.filter.RecipientContext;
-import mireka.smtp.RejectExceptionExt;
-
-import org.subethamail.smtp.TooMuchDataException;
 
 class Link implements FilterChain {
     private final Filter filter;
@@ -28,24 +27,23 @@ class Link implements FilterChain {
     }
 
     @Override
-    public void from(ReversePath from) throws RejectExceptionExt {
+    public void from(String from) throws RejectException {
         filter.from(from);
     }
 
     @Override
-    public FilterReply verifyRecipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
-        return filter.verifyRecipient(recipientContext);
+    public FilterReply verifyRecipient(Recipient recipient)
+            throws RejectException {
+        return filter.verifyRecipient(recipient);
     }
 
     @Override
-    public void recipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
-        filter.recipient(recipientContext);
+    public void recipient(Recipient recipient) throws RejectException {
+        filter.recipient(recipient);
     }
 
     @Override
-    public void data(MailData data) throws RejectExceptionExt,
+    public void data(MailData data) throws RejectException,
             TooMuchDataException, IOException {
         mailTransaction.replaceData(data);
         filter.data(data);

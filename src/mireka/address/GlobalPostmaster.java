@@ -1,18 +1,20 @@
 package mireka.address;
 
 /**
- * GlobalPostmaster represents the special "Postmaster" recipient (without a
- * domain). This is always treated case-insensitively and quoted forms of the
- * name must not be used.
+ * represents the special "Postmaster" recipient (without a domain). This is
+ * always treated case-insensitively.
  * 
  * @see <a href="http://tools.ietf.org/html/rfc5321#section-4.1.1.3">RFC 5321
  *      4.1.1.3</a>
  */
 public class GlobalPostmaster implements Recipient {
-    private final LocalPart localPart;
+    /**
+     * stored to preserve case
+     */
+    private final String text;
 
     public GlobalPostmaster(String postmaster) {
-        this.localPart = new LocalPart(postmaster);
+        this.text = postmaster;
     }
 
     @Override
@@ -31,17 +33,28 @@ public class GlobalPostmaster implements Recipient {
     }
 
     @Override
-    public LocalPart localPart() {
-        return localPart;
+    public String sourceRouteStripped() {
+        return text;
     }
 
     @Override
-    public String sourceRouteStripped() {
-        return localPart.displayableName();
+    public int hashCode() {
+        return 31;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        return true;
     }
 
     @Override
     public String toString() {
-        return localPart.displayableName();
+        return text;
     }
 }

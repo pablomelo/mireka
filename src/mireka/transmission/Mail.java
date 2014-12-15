@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 
 import mireka.MailData;
 import mireka.address.Recipient;
-import mireka.address.ReversePath;
 
 /**
  * An SMTP mail object, which contains both an envelope and content.
@@ -19,8 +18,11 @@ import mireka.address.ReversePath;
  *      Simple Mail Transfer Protocol</a>
  */
 public class Mail {
+    /**
+     * empty string for null reverse-path
+     */
     @Nonnull
-    public ReversePath from;
+    public String from;
     @Nonnull
     public List<Recipient> recipients = new ArrayList<Recipient>();
     public MailData mailData;
@@ -45,47 +47,32 @@ public class Mail {
     public InetAddress receivedFromMtaAddress;
 
     /**
-     * The desired date of sending this mail. Null means immediately.
+     * the desired date of sending this mail. Null means immediately.
      */
     public Date scheduleDate;
     /**
-     * Count of failed attempts until now.
+     * count of failed attempts until now
      */
     public int deliveryAttempts;
-    /**
-     * Count of postponings of delivery attempts since the last actually
-     * performed attempt. Postponing a delivery means that no remote SMTP hosts
-     * were connected, so a postponed delivery attempt must not be considered as
-     * a retry.
-     */
-    public int postpones;
 
-    /**
-     * Creates an essentially deep copy of this instance. The same
-     * {@link #mailData} object is used, otherwise every other field is a deep
-     * copy.
-     * 
-     * @return A deep copy of this mail, except the {@link #mailData} object,
-     *         which is used in both the new and in this object.
-     */
-    public Mail copy() {
-        Mail result = new Mail();
-        result.from = from;
-        result.recipients.addAll(recipients);
-        result.mailData = mailData;
-        result.arrivalDate = arrivalDate;
-        result.receivedFromMtaName = receivedFromMtaName;
-        result.receivedFromMtaAddress = receivedFromMtaAddress;
-        result.scheduleDate = scheduleDate;
-        result.deliveryAttempts = deliveryAttempts;
-        result.postpones = postpones;
-        return result;
+    public Mail() {
+        // 
     }
 
-    /**
-     * Returns a short descriptive information about the mail, useful for 
-     * logging. 
-     */
+    public Mail(String from, List<Recipient> recipients, MailData mailData) {
+        this.from = from;
+        this.recipients.addAll(recipients);
+        this.mailData = mailData;
+    }
+
+    public Mail(Mail src, MailData mailData) {
+        this.from = src.from;
+        this.recipients.addAll(src.recipients);
+        this.mailData = mailData;
+        this.scheduleDate = src.scheduleDate;
+        this.deliveryAttempts = src.deliveryAttempts;
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
@@ -96,11 +83,9 @@ public class Mail {
             builder.append(", recipients=");
             builder.append(recipients.get(0));
             builder.append(",...");
-        } else if (recipients.size() == 1) {
+        } else {
             builder.append(", recipient=");
             builder.append(recipients.get(0));
-        } else {
-            builder.append(", no recipients");
         }
         builder.append("]");
         return builder.toString();

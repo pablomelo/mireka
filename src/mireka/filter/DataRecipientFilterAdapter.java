@@ -3,9 +3,9 @@ package mireka.filter;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
-import mireka.smtp.RejectExceptionExt;
+import mireka.address.Recipient;
 
+import org.subethamail.smtp.RejectException;
 import org.subethamail.smtp.TooMuchDataException;
 
 /**
@@ -34,40 +34,38 @@ public final class DataRecipientFilterAdapter implements Filter {
     }
 
     @Override
-    public void from(ReversePath from) throws RejectExceptionExt {
+    public void from(String from) throws RejectException {
         filter.from(from);
         chain.from(from);
     }
 
     @Override
-    public FilterReply verifyRecipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
-        FilterReply result = filter.verifyRecipient(recipientContext);
+    public FilterReply verifyRecipient(Recipient recipient)
+            throws RejectException {
+        FilterReply result = filter.verifyRecipient(recipient);
         switch (result) {
         case ACCEPT:
             return FilterReply.ACCEPT;
         case NEUTRAL:
-            return chain.verifyRecipient(recipientContext);
+            return chain.verifyRecipient(recipient);
         default:
             throw new RuntimeException();
         }
     }
 
     @Override
-    public void recipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
-        filter.recipient(recipientContext);
-        chain.recipient(recipientContext);
+    public void recipient(Recipient recipient) throws RejectException {
+        filter.recipient(recipient);
+        chain.recipient(recipient);
     }
 
     @Override
-    public void data(MailData data) throws RejectExceptionExt,
+    public void data(MailData data) throws RejectException,
             TooMuchDataException, IOException {
         filter.data(data);
 
-        for (RecipientContext recipientContext : mailTransaction
-                .getAcceptedRecipientContexts()) {
-            filter.dataRecipient(data, recipientContext);
+        for (Recipient recipient : mailTransaction.getRecipients()) {
+            filter.dataRecipient(data, recipient);
         }
 
         chain.data(data);

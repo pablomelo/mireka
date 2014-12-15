@@ -3,9 +3,9 @@ package mireka.filter;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
-import mireka.smtp.RejectExceptionExt;
+import mireka.address.Recipient;
 
+import org.subethamail.smtp.RejectException;
 import org.subethamail.smtp.TooMuchDataException;
 
 /**
@@ -26,31 +26,30 @@ public abstract class StatelessFilterType implements FilterType,
     }
 
     @Override
-    public void from(ReversePath from) {
+    public void from(String from) {
         // do nothing
     }
 
     @Override
-    public FilterReply verifyRecipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
+    public FilterReply verifyRecipient(Recipient recipient)
+            throws RejectException {
         return FilterReply.NEUTRAL;
     }
 
     @Override
-    public void recipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
+    public void recipient(Recipient recipient) throws RejectException {
         // do nothing
     }
 
     @Override
-    public void data(MailData data) throws RejectExceptionExt,
+    public void data(MailData data) throws RejectException,
             TooMuchDataException, IOException {
         // do nothing
     }
 
     @Override
-    public void dataRecipient(MailData data, RecipientContext recipientContext)
-            throws RejectExceptionExt {
+    public void dataRecipient(MailData data, Recipient recipient)
+            throws RejectException {
         // do nothing
     }
 

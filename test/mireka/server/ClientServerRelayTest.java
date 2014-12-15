@@ -1,34 +1,28 @@
 package mireka.server;
 
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 
 import mireka.ArrayEndsWith;
-import mireka.ExampleAddress;
 import mireka.ExampleMailData;
-import mireka.destination.DestinationProcessorFilter;
-import mireka.filter.local.AcceptAllRecipient;
-import mireka.filter.local.LookupDestinationFilter;
-import mireka.filter.local.table.RecipientSpecificationDestinationPair;
-import mireka.filter.local.table.RecipientSpecificationFactory;
-import mireka.filter.proxy.RelayDestination;
+import mireka.ClientFactory;
+import mireka.filter.builtin.local.AcceptAllRecipient;
+import mireka.filter.builtin.proxy.BackendServer;
+import mireka.filter.builtin.proxy.RelayMailTransaction;
 import mireka.filterchain.Filters;
-import mireka.smtp.client.BackendServer;
-import mireka.smtp.client.ClientFactory;
-import mireka.smtp.server.MessageHandlerFactoryImpl;
-import mireka.smtp.server.SMTPServer;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.subethamail.smtp.client.SMTPException;
 import org.subethamail.smtp.client.SmartClient;
+import org.subethamail.smtp.server.SMTPServer;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 
+import static org.junit.Assert.assertThat;
+
 public class ClientServerRelayTest {
-    private SMTPServer smtpServer;
+    private SMTPService smtpService;
     private Wiser wiser;
 
     @Before
@@ -38,46 +32,26 @@ public class ClientServerRelayTest {
     }
 
     private void setupSmtpService() {
-        Filters filters = createFilters();
-
-        MessageHandlerFactoryImpl handlerFactoryImpl =
-                new MessageHandlerFactoryImpl();
-        handlerFactoryImpl.setFilters(filters);
-        smtpServer = new SMTPServer(handlerFactoryImpl);
-        smtpServer.setPort(8025);
-        smtpServer.start();
-    }
-
-    private Filters createFilters() {
         Filters filters = new Filters();
+        filters.addFilter(new AcceptAllRecipient());
 
         ClientFactory client = new ClientFactory();
-        client.setHelo("relay.localdomain");
         BackendServer backendServer = new BackendServer();
         backendServer.setHost("localhost");
         backendServer.setPort(8026);
         backendServer.setClientFactory(client);
-        RelayDestination relayDestination = new RelayDestination();
-        relayDestination.setBackendServer(backendServer);
+        RelayMailTransaction relayFilter = new RelayMailTransaction();
+        relayFilter.setBackendServer(backendServer);
+        filters.addFilter(relayFilter);
 
-        RecipientSpecificationDestinationPair recipientDestinationMapper =
-                new RecipientSpecificationDestinationPair();
-        recipientDestinationMapper
-                .addRecipientSpecification(new RecipientSpecificationFactory()
-                        .create(ExampleAddress.JANE));
-        recipientDestinationMapper.setDestination(relayDestination);
-        LookupDestinationFilter lookupDestinationFilter =
-                new LookupDestinationFilter();
-        lookupDestinationFilter
-                .setRecipientDestinationMapper(recipientDestinationMapper);
-        filters.addFilter(lookupDestinationFilter);
-
-        filters.addFilter(new AcceptAllRecipient());
-
-        DestinationProcessorFilter destinationProcessFilter =
-                new DestinationProcessorFilter();
-        filters.addFilter(destinationProcessFilter);
-        return filters;
+        MessageHandlerFactoryImpl handlerFactoryImpl =
+                new MessageHandlerFactoryImpl();
+        handlerFactoryImpl.setFilters(filters);
+        SMTPServer smtpServer = new SMTPServer(handlerFactoryImpl);
+        smtpServer.setPort(8025);
+        smtpService = new SMTPService();
+        smtpService.setSmtpServer(smtpServer);
+        smtpService.start();
     }
 
     private void setupWiser() {
@@ -104,6 +78,6 @@ public class ClientServerRelayTest {
     @After
     public void cleanup() {
         wiser.stop();
-        smtpServer.stop();
+        smtpService.stop();
     }
 }

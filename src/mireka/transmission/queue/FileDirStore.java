@@ -11,14 +11,11 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.util.Arrays;
-import java.util.NavigableSet;
 import java.util.Properties;
-import java.util.TreeSet;
-
-import javax.annotation.concurrent.GuardedBy;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import mireka.MailData;
-import mireka.smtp.EnhancedStatus;
+import mireka.transmission.EnhancedStatus;
 import mireka.transmission.Mail;
 import mireka.transmission.queue.dataprop.DataProperties;
 import mireka.util.StreamCopier;
@@ -42,24 +39,10 @@ public class FileDirStore {
     private final Logger logger = LoggerFactory.getLogger(FileDirStore.class);
     private File dir;
     /**
-     * The allowed count of mails in the store.
+     * allowed count of mails in the store
      */
     private int maxSize = 2000;
-    /**
-     * The mail names currently allocated, in the usual circumstances these
-     * corresponds to the mails currently scheduled and are residing in the
-     * directory. If a mail for some reason cannot be deleted, then its name
-     * will remain in this collection, until a system restart.
-     */
-    @GuardedBy("this")
-    private final NavigableSet<MailName> mailNames = new TreeSet<MailName>();
-    /**
-     * True if {@link #initializeAndQueryMailNamesOrderedBySchedule()} is called
-     * and it was successful. This must be the first operation which is called
-     * on a new instance.
-     */
-    @GuardedBy("this")
-    private boolean initialized;
+    private final AtomicInteger size = new AtomicInteger();
 
     /**
      * use this constructor with setters
@@ -76,33 +59,22 @@ public class FileDirStore {
     /**
      * this function must be called before any other method, and it cannot be
      * called more then once.
-     * 
-     * @throws QueueStorageException
-     *             if the store cannot be initialized for some reason.
      */
-    public synchronized MailName[] initializeAndQueryMailNamesOrderedBySchedule()
-            throws QueueStorageException {
-        try {
-            MailName[] mailNamesArray = queryMailNames();
-            mailNames.addAll(Arrays.asList(mailNamesArray));
-            initialized = true;
-            logger.info("Mail store initialized with " + mailNamesArray.length
-                    + " mails in " + dir);
-            return mailNamesArray;
-        } catch (IOException e) {
-            throw new QueueStorageException(e,
-                    EnhancedStatus.TRANSIENT_LOCAL_ERROR_IN_PROCESSING);
-        }
+    public MailName[] initializeAndQueryMailNamesOrderedBySchedule() {
+        MailName[] mailNames = queryMailNames();
+        size.set(mailNames.length);
+        logger.info("Mail store initialized with " + size + " mails in " + dir);
+        return mailNames;
     }
 
-    private MailName[] queryMailNames() throws IOException {
+    private MailName[] queryMailNames() {
         String[] names = listEnvelopeFileNames();
         MailName[] mailNames = convertFileNamesToMailNames(names);
         Arrays.sort(mailNames);
         return mailNames;
     }
 
-    private String[] listEnvelopeFileNames() throws IOException {
+    private String[] listEnvelopeFileNames() {
         String[] names = dir.list(new FilenameFilter() {
 
             @Override
@@ -110,8 +82,6 @@ public class FileDirStore {
                 return name.endsWith(MailName.MESSAGE_ENVELOPE_DOT_EXTENSION);
             }
         });
-        if (names == null)
-            throw new IOException("Cannot list directory: " + dir);
         return names;
     }
 
@@ -124,83 +94,60 @@ public class FileDirStore {
     }
 
     public MailName save(Mail srcMail) throws QueueStorageException {
-        MailName mailName = allocateMailName(srcMail);
-        File contentFile = contentFileForName(mailName);
-        File envelopeFile = envelopeFileForName(mailName);
+        int sizeValue = size.incrementAndGet();
         try {
+            if (sizeValue > maxSize)
+                throw new QueueStorageException(
+                        "Store is full",
+                        EnhancedStatus.TRANSIENT_SYSTEM_NOT_ACCEPTING_NETWORK_MESSAGES);
+            return saveInner(srcMail);
+        } catch (QueueStorageException e) {
+            size.decrementAndGet(); // revert
+            throw e;
+        } catch (RuntimeException e) {
+            size.decrementAndGet(); // revert
+            throw e;
+        }
+    }
+
+    private MailName saveInner(Mail srcMail) throws QueueStorageException {
+        MailName mailName;
+        try {
+            mailName = allocateMessageContentFile(srcMail);
             writeMessageContentIntoFile(srcMail.mailData,
                     contentFileForName(mailName));
         } catch (IOException e) {
-            if (contentFile.exists() && !contentFile.delete()) {
-                logger.error("Writing to the message content file failed, the "
-                        + "file exists, and it could not be deleted: "
-                        + contentFile);
-            } else {
-                releaseMailName(mailName);
-            }
             throw new QueueStorageException(e, EnhancedStatus.MAIL_SYSTEM_FULL);
         }
         try {
-            writeEnvelopeIntoFile(srcMail, envelopeFile);
+            writeEnvelopeIntoFile(srcMail, envelopeFileForName(mailName));
         } catch (IOException e) {
-            if (envelopeFile.exists() && !envelopeFile.delete()) {
-                logger.error("Writing to the envelope file failed, the "
-                        + "file exists, and it could not be deleted: "
-                        + envelopeFile);
-            } else {
-                if (contentFile.exists() && !contentFile.delete()) {
-                    logger.error("Deleting message content file of "
-                            + mailName
-                            + " failed after "
-                            + "message envelope could not be written into file. "
-                            + "The mail transaction will be rejected, "
-                            + "and the mail will never be processed. "
-                            + "Message content file remains in the queue "
-                            + "directory, please delete it manually.");
-                } else {
-                    releaseMailName(mailName);
-                }
-            }
+            File mailDataFile = new File(dir, mailName.contentFileName());
+            boolean fSuccess = mailDataFile.delete();
+            if (!fSuccess)
+                logger.error("Deleting message content file of " + mailName
+                        + " failed after "
+                        + "message envelope cannot be written into file. "
+                        + "The mail transaction will be rejected, "
+                        + "and the mail will never be processed. "
+                        + "Message content file remains in the queue "
+                        + "directory, " + "please delete it manually. " + "");
             throw new QueueStorageException(e, EnhancedStatus.MAIL_SYSTEM_FULL);
         }
-        logger.debug("Mail was saved to store: {}, {}", srcMail, dir);
         return mailName;
     }
 
-    private synchronized MailName allocateMailName(Mail srcMail)
-            throws QueueStorageException {
-        if (!initialized)
-            throw new IllegalStateException();
-        if (srcMail.scheduleDate == null)
-            throw new IllegalArgumentException(
-                    "Schedule date must have been set before");
-        if (mailNames.size() >= maxSize)
-            throw new QueueStorageException(
-                    "Store is full",
-                    EnhancedStatus.TRANSIENT_SYSTEM_NOT_ACCEPTING_NETWORK_MESSAGES);
-
-        // find a free sequence number, within the scheduleDate
-        long scheduleDate = srcMail.scheduleDate.getTime();
-        MailName nameForTheNextTimePoint = new MailName(scheduleDate + 1, 0);
-        MailName previousMail = mailNames.lower(nameForTheNextTimePoint);
-        int sequenceNumber;
-        if (previousMail == null || previousMail.scheduleDate < scheduleDate) {
-            // so there is no mail on the same scheduleDate
-            sequenceNumber = 0;
-        } else {
-            // there is mail on the same time point
-            sequenceNumber = previousMail.sequenceNumber + 1;
-        }
-        MailName mailName = new MailName(scheduleDate, sequenceNumber);
-        mailNames.add(mailName);
-        return mailName;
-    }
-
-    private synchronized void releaseMailName(MailName mailName) {
-        boolean found = mailNames.remove(mailName);
-        if (!found) {
-            logger.error("Mail name could not been found in the set of "
-                    + "allocated names, this should not happen.");
+    private MailName allocateMessageContentFile(Mail srcMail)
+            throws IOException {
+        MailName mailName = MailName.create(srcMail.scheduleDate);
+        while (true) {
+            File file = contentFileForName(mailName);
+            if (file.createNewFile())
+                return mailName;
+            mailName = mailName.nextInSequence();
+            if (mailName.sequenceNumber >= 5)
+                logger.warn("Too much attempt to create unique "
+                        + "mail content file for name {}", mailName);
         }
     }
 
@@ -262,49 +209,25 @@ public class FileDirStore {
     }
 
     public void moveToErrorDir(MailName mailName) throws QueueStorageException {
-        File envelopeFile = new File(dir, mailName.envelopeFileName());
-        File mailDataFile = new File(dir, mailName.contentFileName());
         try {
             File errorDir = new File(dir, "error");
             errorDir.mkdir();
 
-            if (envelopeFile.exists()) {
-                File envelopeTargetFile =
-                        new File(errorDir, mailName.envelopeFileName());
-                StreamCopier.copyFile(envelopeFile, envelopeTargetFile);
-                logger.info("Envelope file has been successfully copied into "
-                        + "the error directory: " + envelopeFile);
-            } else {
-                logger.error("Envelope file could not be copied into the error "
-                        + "directory, because it does not exist: "
-                        + envelopeFile);
-            }
+            File envelopeFile = new File(dir, mailName.envelopeFileName());
+            File envelopeTargetFile =
+                    new File(errorDir, mailName.envelopeFileName());
+            StreamCopier.copyFile(envelopeFile, envelopeTargetFile);
 
-            if (mailDataFile.exists()) {
-                File mailDataTargetFile =
-                        new File(errorDir, mailName.contentFileName());
-                StreamCopier.copyFile(mailDataFile, mailDataTargetFile);
-                logger.info("Mail data file has been successfully moved into "
-                        + "the error directory: " + envelopeFile);
-            } else {
-                logger.error("Mail data file could not be moved to the error "
-                        + "directory, because it does not exist: "
-                        + mailDataFile);
-            }
+            File mailDataFile = new File(dir, mailName.contentFileName());
+            File mailDataTargetFile =
+                    new File(errorDir, mailName.contentFileName());
+            StreamCopier.copyFile(mailDataFile, mailDataTargetFile);
 
             envelopeFile.delete();
             mailDataFile.delete();
+            size.decrementAndGet();
         } catch (IOException e) {
             throw new QueueStorageException(e, EnhancedStatus.MAIL_SYSTEM_FULL);
-        }
-        if (!envelopeFile.exists() && !mailDataFile.exists()) {
-            releaseMailName(mailName);
-        } else {
-            throw new QueueStorageException(
-                    "Mail name cannot be released, because either the "
-                            + "envelope or the mail data file still exists: "
-                            + mailName,
-                    EnhancedStatus.TRANSIENT_LOCAL_ERROR_IN_PROCESSING);
         }
     }
 
@@ -320,7 +243,7 @@ public class FileDirStore {
             if (!fSuccess)
                 throw new IOException("Cannot delete mail data file "
                         + mailDataFile);
-            releaseMailName(mailName);
+            size.decrementAndGet();
         } catch (IOException e) {
             throw new QueueStorageException(e,
                     EnhancedStatus.TRANSIENT_LOCAL_ERROR_IN_PROCESSING);
@@ -335,8 +258,8 @@ public class FileDirStore {
     /**
      * @category GETSET
      */
-    public void setDir(String dir) {
-        this.dir = new File(dir);
+    public void setDir(File dir) {
+        this.dir = dir;
     }
 
     /**

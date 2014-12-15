@@ -3,49 +3,33 @@ package mireka.filter;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
-import mireka.destination.UnknownRecipientDestination;
-import mireka.smtp.RejectExceptionExt;
+import mireka.address.Recipient;
 
 import org.subethamail.smtp.RejectException;
 import org.subethamail.smtp.TooMuchDataException;
 
 /**
- * A filter processes mails, its functions are called in the different phases of
- * the SMTP mail transaction.
- * <p>
- * Note: Don't implement this interface directly, use the descendant interfaces
- * and the implementing abstract classes
+ * don't implement this interface directly, use the descendant interfaces and
+ * the implementing abstract classes
  */
 public interface FilterBase {
 
     void begin();
 
-    void from(ReversePath from) throws RejectExceptionExt;
+    void from(String from) throws RejectException;
 
     /**
-     * Decides if a recipient should be accepted. The decision can be a final
-     * positive, a final negative, or a neutral answer. This function is not
-     * called if a previous filter has already accepted or rejected the
-     * recipient. In case of a neutral answer, other filters will decide. If all
-     * filters return the neutral answer, then the recipient will be accepted if
-     * a destination is assigned to it and the assigned destination is not an
-     * {@link UnknownRecipientDestination}; otherwise it will be rejected as an
-     * unknown user.
-     * 
-     * @throws RejectException
-     *             if the recipient is not valid and it must be rejected
+     * it is not called if a previous filter has already accepted the recipient
      */
-    FilterReply verifyRecipient(RecipientContext recipientContext)
-            throws RejectExceptionExt;
+    FilterReply verifyRecipient(Recipient recipient) throws RejectException;
 
     /**
-     * Processes an accepted recipient. It is only called if one of the filters
-     * accepted the recipient in {@link #verifyRecipient}.
+     * it is only called if one of the filters accepted the recipient in
+     * {@link #verifyRecipient}
      */
-    void recipient(RecipientContext recipientContext) throws RejectExceptionExt;
+    void recipient(Recipient recipient) throws RejectException;
 
-    void data(MailData data) throws RejectExceptionExt, TooMuchDataException,
+    void data(MailData data) throws RejectException, TooMuchDataException,
             IOException;
 
     /**
