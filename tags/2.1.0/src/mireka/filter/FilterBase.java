@@ -1,0 +1,40 @@
+package mireka.filter;
+
+import java.io.IOException;
+
+import mireka.MailData;
+
+import org.subethamail.smtp.RejectException;
+import org.subethamail.smtp.TooMuchDataException;
+
+/**
+ * don't implement this interface directly, use the descendant interfaces and
+ * the implementing abstract classes
+ */
+public interface FilterBase {
+
+    void begin();
+
+    void from(String from) throws RejectException;
+
+    /**
+     * it is not called if a previous filter has already accepted the recipient
+     */
+    FilterReply verifyRecipient(RecipientContext recipientContext) throws RejectException;
+
+    /**
+     * it is only called if one of the filters accepted the recipient in
+     * {@link #verifyRecipient}
+     */
+    void recipient(RecipientContext recipientContext) throws RejectException;
+
+    void data(MailData data) throws RejectException, TooMuchDataException,
+            IOException;
+
+    /**
+     * it is always called, even if some other filter failed or no mail was
+     * delivered in this mail transaction
+     */
+    void done();
+
+}
