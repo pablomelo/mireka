@@ -3,6 +3,7 @@ package mireka.transmission.queue;
 import static org.mockito.Matchers.*;
 import static org.mockito.Mockito.*;
 
+import java.util.Date;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -22,7 +23,7 @@ public class ScheduleFileDirQueueTest {
     @Mock
     private ScheduledThreadPoolExecutor mockedPool;
     private ScheduleFileDirQueue queue;
-    private MailName mailName = new MailName(System.currentTimeMillis(), 0);
+    private MailName mailName = MailName.create(new Date());
     private Mail mail = ExampleMail.simple();
 
     @Before

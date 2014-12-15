@@ -1,34 +1,33 @@
 package mireka.server;
 
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 
 import mireka.ArrayEndsWith;
+import mireka.ClientFactory;
 import mireka.ExampleAddress;
 import mireka.ExampleMailData;
-import mireka.destination.DestinationProcessorFilter;
 import mireka.filter.local.AcceptAllRecipient;
-import mireka.filter.local.LookupDestinationFilter;
+import mireka.filter.local.LookupDestination;
 import mireka.filter.local.table.RecipientSpecificationDestinationPair;
 import mireka.filter.local.table.RecipientSpecificationFactory;
-import mireka.filter.proxy.RelayDestination;
+import mireka.filter.proxy.BackendServer;
+import mireka.filter.proxy.Relay;
+import mireka.filter.proxy.RelayMailTransaction;
 import mireka.filterchain.Filters;
-import mireka.smtp.client.BackendServer;
-import mireka.smtp.client.ClientFactory;
-import mireka.smtp.server.MessageHandlerFactoryImpl;
-import mireka.smtp.server.SMTPServer;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.subethamail.smtp.client.SMTPException;
 import org.subethamail.smtp.client.SmartClient;
+import org.subethamail.smtp.server.SMTPServer;
 import org.subethamail.wiser.Wiser;
 import org.subethamail.wiser.WiserMessage;
 
 public class ClientServerRelayTest {
-    private SMTPServer smtpServer;
+    private SMTPService smtpService;
     private Wiser wiser;
 
     @Before
@@ -43,40 +42,39 @@ public class ClientServerRelayTest {
         MessageHandlerFactoryImpl handlerFactoryImpl =
                 new MessageHandlerFactoryImpl();
         handlerFactoryImpl.setFilters(filters);
-        smtpServer = new SMTPServer(handlerFactoryImpl);
+        SMTPServer smtpServer = new SMTPServer(handlerFactoryImpl);
         smtpServer.setPort(8025);
-        smtpServer.start();
+        smtpService = new SMTPService();
+        smtpService.setSmtpServer(smtpServer);
+        smtpService.start();
     }
 
     private Filters createFilters() {
         Filters filters = new Filters();
 
         ClientFactory client = new ClientFactory();
-        client.setHelo("relay.localdomain");
         BackendServer backendServer = new BackendServer();
         backendServer.setHost("localhost");
         backendServer.setPort(8026);
         backendServer.setClientFactory(client);
-        RelayDestination relayDestination = new RelayDestination();
+        Relay relayDestination = new Relay();
         relayDestination.setBackendServer(backendServer);
 
         RecipientSpecificationDestinationPair recipientDestinationMapper =
                 new RecipientSpecificationDestinationPair();
         recipientDestinationMapper
-                .addRecipientSpecification(new RecipientSpecificationFactory()
+                .setRecipientSpecification(new RecipientSpecificationFactory()
                         .create(ExampleAddress.JANE));
         recipientDestinationMapper.setDestination(relayDestination);
-        LookupDestinationFilter lookupDestinationFilter =
-                new LookupDestinationFilter();
+        LookupDestination lookupDestinationFilter = new LookupDestination();
         lookupDestinationFilter
                 .setRecipientDestinationMapper(recipientDestinationMapper);
         filters.addFilter(lookupDestinationFilter);
 
         filters.addFilter(new AcceptAllRecipient());
 
-        DestinationProcessorFilter destinationProcessFilter =
-                new DestinationProcessorFilter();
-        filters.addFilter(destinationProcessFilter);
+        RelayMailTransaction relayFilter = new RelayMailTransaction();
+        filters.addFilter(relayFilter);
         return filters;
     }
 
@@ -104,6 +102,6 @@ public class ClientServerRelayTest {
     @After
     public void cleanup() {
         wiser.stop();
-        smtpServer.stop();
+        smtpService.stop();
     }
 }

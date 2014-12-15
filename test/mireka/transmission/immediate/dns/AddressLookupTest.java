@@ -5,10 +5,9 @@ import static org.junit.Assert.*;
 
 import java.net.InetAddress;
 
-import mireka.smtp.SendException;
+import mireka.transmission.immediate.SendException;
 import mockit.Expectations;
 import mockit.NonStrict;
-import mockit.Tested;
 
 import org.junit.Test;
 import org.xbill.DNS.AAAARecord;
@@ -18,9 +17,8 @@ import org.xbill.DNS.Record;
 
 public class AddressLookupTest {
 
-    @Tested
-    private AddressLookup addressLookup;
-
+    private AddressLookup addressLookup =
+            new AddressLookup(HOST1_EXAMPLE_COM_NAME);
     @NonStrict
     private Lookup lookup;
 
@@ -39,8 +37,7 @@ public class AddressLookupTest {
             }
         };
 
-        InetAddress[] addresses =
-                addressLookup.queryAddresses(HOST1_EXAMPLE_COM_NAME);
+        InetAddress[] addresses = addressLookup.queryAddresses();
 
         InetAddress[] expected = new InetAddress[] { IP1, IP2 };
         assertArrayEquals(expected, addresses);
@@ -60,8 +57,7 @@ public class AddressLookupTest {
             }
         };
 
-        InetAddress[] addresses =
-                addressLookup.queryAddresses(HOST1_EXAMPLE_COM_NAME);
+        InetAddress[] addresses = addressLookup.queryAddresses();
 
         InetAddress[] expected = new InetAddress[] { IPV6 };
         assertArrayEquals(expected, addresses);
@@ -81,7 +77,7 @@ public class AddressLookupTest {
 
         SendException e;
         try {
-            addressLookup.queryAddresses(HOST1_EXAMPLE_COM_NAME);
+            addressLookup.queryAddresses();
             fail("An exception must have been thrown.");
             return;
         } catch (SendException e1) {

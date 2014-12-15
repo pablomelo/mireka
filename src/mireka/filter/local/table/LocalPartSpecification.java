@@ -9,5 +9,5 @@ import mireka.address.LocalPart;
  * different domain) must be treated as if it were case sensitive.
  */
 public interface LocalPartSpecification {
-    boolean isSatisfiedBy(LocalPart localPart);
+    boolean matches(LocalPart localPart);
 }

@@ -3,13 +3,9 @@ package mireka.filter.misc;
 import java.util.Deque;
 import java.util.LinkedList;
 
-import javax.annotation.concurrent.ThreadSafe;
+import javax.annotation.concurrent.NotThreadSafe;
 
-/**
- * Tarpit maintains a list about attempts to send mail to non-existent users and
- * calculates a wait duration which should be used to slow down clients.
- */
-@ThreadSafe
+@NotThreadSafe
 public class Tarpit {
     private final long VALIDITY_DURATION = 30000;
     private final long WAIT_BY_MARK = 1000;
@@ -19,14 +15,14 @@ public class Tarpit {
      * that the wait duration does not drop temporarily when a mark expires
      * while otherwise a dictionary attack is ongoing.
      */
-    private final int MAX_EXPIRATIONS = (int) Math.ceil((double) MAX_WAIT
-            / WAIT_BY_MARK) + 1;
+    private final int MAX_EXPIRATIONS =
+            (int) Math.ceil((double) MAX_WAIT / WAIT_BY_MARK) + 1;
     /**
      * new entries must be added to the head
      */
     private Deque<Long> markExpirations = new LinkedList<Long>();
 
-    public synchronized void addRejection() {
+    public void addRejection() {
         removeExpiredMarks();
         Long expiration = System.currentTimeMillis() + VALIDITY_DURATION;
         markExpirations.addFirst(expiration);
@@ -40,7 +36,7 @@ public class Tarpit {
             markExpirations.removeLast();
     }
 
-    public synchronized long waitDuration() {
+    public long waitDuration() {
         removeExpiredMarks();
         long waitDuration = markExpirations.size() * WAIT_BY_MARK;
         waitDuration = Math.min(MAX_WAIT, waitDuration);

@@ -3,9 +3,8 @@ package mireka.filter;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
-import mireka.smtp.RejectExceptionExt;
 
+import org.subethamail.smtp.RejectException;
 import org.subethamail.smtp.TooMuchDataException;
 
 /**
@@ -34,14 +33,14 @@ public final class DataRecipientFilterAdapter implements Filter {
     }
 
     @Override
-    public void from(ReversePath from) throws RejectExceptionExt {
+    public void from(String from) throws RejectException {
         filter.from(from);
         chain.from(from);
     }
 
     @Override
     public FilterReply verifyRecipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
+            throws RejectException {
         FilterReply result = filter.verifyRecipient(recipientContext);
         switch (result) {
         case ACCEPT:
@@ -54,14 +53,13 @@ public final class DataRecipientFilterAdapter implements Filter {
     }
 
     @Override
-    public void recipient(RecipientContext recipientContext)
-            throws RejectExceptionExt {
+    public void recipient(RecipientContext recipientContext) throws RejectException {
         filter.recipient(recipientContext);
         chain.recipient(recipientContext);
     }
 
     @Override
-    public void data(MailData data) throws RejectExceptionExt,
+    public void data(MailData data) throws RejectException,
             TooMuchDataException, IOException {
         filter.data(data);
 

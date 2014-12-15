@@ -3,6 +3,8 @@ package mireka.filter.dnsbl;
 import java.util.ArrayList;
 import java.util.List;
 
+import mireka.RejectExceptionExt;
+import mireka.SmtpReply;
 import mireka.filter.AbstractDataRecipientFilter;
 import mireka.filter.DataRecipientFilterAdapter;
 import mireka.filter.Filter;
@@ -10,16 +12,21 @@ import mireka.filter.FilterReply;
 import mireka.filter.FilterType;
 import mireka.filter.MailTransaction;
 import mireka.filter.RecipientContext;
-import mireka.smtp.EnhancedStatus;
-import mireka.smtp.RejectExceptionExt;
-import mireka.smtp.SmtpReplyTemplate;
+
+import org.subethamail.smtp.RejectException;
 
 public class RefuseBlacklistedRecipient implements FilterType {
     private final List<Dnsbl> blacklists = new ArrayList<Dnsbl>();
-    private SmtpReplyTemplate smtpReplyTemplate = new SmtpReplyTemplate(530,
-            "5.7.1",
-            "Rejected: unauthenticated e-mail from {0} is restricted. "
-                    + "Contact the postmaster for details.");
+    private SmtpReply smtpReply =
+            new SmtpReply(530,
+                    "Rejected: unauthenticated e-mail from {0} is restricted. "
+                            + "Contact the postmaster for details.");
+
+    public void addBlacklist(Dnsbl dnsbl) {
+        if (dnsbl == null)
+            throw new NullPointerException();
+        blacklists.add(dnsbl);
+    }
 
     @Override
     public Filter createInstance(MailTransaction mailTransaction) {
@@ -28,17 +35,6 @@ public class RefuseBlacklistedRecipient implements FilterType {
         FilterImpl filterInstance =
                 new FilterImpl(mailTransaction, dnsblChecker);
         return new DataRecipientFilterAdapter(filterInstance, mailTransaction);
-    }
-
-    public void addBlacklist(Dnsbl dnsbl) {
-        if (dnsbl == null)
-            throw new NullPointerException();
-        blacklists.add(dnsbl);
-    }
-
-    public void setBlacklists(List<Dnsbl> lists) {
-        this.blacklists.clear();
-        this.blacklists.addAll(lists);
     }
 
     private class FilterImpl extends AbstractDataRecipientFilter {
@@ -52,21 +48,20 @@ public class RefuseBlacklistedRecipient implements FilterType {
 
         @Override
         public FilterReply verifyRecipient(RecipientContext recipientContext)
-                throws RejectExceptionExt {
+                throws RejectException {
             DnsblResult dnsblResult = dnsblChecker.getResult();
             if (dnsblResult.isListed) {
-                EnhancedStatus smtpReply = calculateSmtpReply(dnsblResult);
+                SmtpReply smtpReply = calculateSmtpReply(dnsblResult);
                 throw new RejectExceptionExt(smtpReply);
             }
             return FilterReply.NEUTRAL;
         }
 
-        private EnhancedStatus calculateSmtpReply(DnsblResult dnsblResult) {
-            SmtpReplyTemplate reply =
-                    dnsblResult.dnsbl.smtpReplyTemplate
-                            .resolveDefaultsFrom(smtpReplyTemplate);
+        private SmtpReply calculateSmtpReply(DnsblResult dnsblResult) {
+            SmtpReply reply =
+                    dnsblResult.dnsbl.smtpReply.resolveDefaultsFrom(smtpReply);
             reply = reply.format(mailTransaction.getRemoteInetAddress());
-            return reply.toEnhancedStatus();
+            return reply;
         }
     }
 }

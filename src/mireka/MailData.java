@@ -20,14 +20,10 @@ public interface MailData {
      */
     InputStream getInputStream() throws IOException;
 
-    /**
-     * Copies the message content into the supplied stream. It does not close
-     * the target stream.
-     */
     void writeTo(OutputStream out) throws IOException;
 
     /**
-     * Releases resources, like temporary files.
+     * releases resources, like temporary files
      */
     void dispose();
 }

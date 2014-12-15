@@ -1,7 +1,5 @@
 package mireka.filter.builtin;
 
-import static org.mockito.Mockito.*;
-
 import java.io.IOException;
 
 import mireka.ExampleMailData;
@@ -10,7 +8,6 @@ import mireka.MailDataWithSameContent;
 import mireka.filter.Filter;
 import mireka.filter.FilterChain;
 import mireka.filter.misc.RejectLargeMail;
-import mireka.smtp.RejectExceptionExt;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -18,7 +15,10 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.subethamail.smtp.RejectException;
 import org.subethamail.smtp.TooMuchDataException;
+
+import static org.mockito.Mockito.verify;
 
 public class RejectLargeMailTest {
     @Mock
@@ -36,8 +36,8 @@ public class RejectLargeMailTest {
     }
 
     @Test
-    public void testSmallMail() throws TooMuchDataException,
-            RejectExceptionExt, IOException {
+    public void testSmallMail() throws TooMuchDataException, RejectException,
+            IOException {
         filter.data(ExampleMailData.simple());
 
         verify(chain).data(exampleSimpleMail());
@@ -49,8 +49,8 @@ public class RejectLargeMailTest {
     }
 
     @Test(expected = TooMuchDataException.class)
-    public void testLargeMail() throws TooMuchDataException,
-            RejectExceptionExt, IOException {
+    public void testLargeMail() throws TooMuchDataException, RejectException,
+            IOException {
         filter.data(ExampleMailData.mail4k());
 
         ArgumentCaptor<MailData> producedMailDataArgument =

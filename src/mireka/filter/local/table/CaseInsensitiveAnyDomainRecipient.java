@@ -14,14 +14,21 @@ public class CaseInsensitiveAnyDomainRecipient implements
 
     @Override
     public boolean isSatisfiedBy(Recipient recipient) {
-        return localPart.isSatisfiedBy(recipient.localPart());
+        return localPart.matches(recipient.localPart());
     }
 
     /**
      * @category GETSET
      */
-    public void setLocalPart(String localPart) {
-        this.localPart = new CaseInsensitiveLocalPartSpecification(localPart);
+    public CaseInsensitiveLocalPartSpecification getLocalPart() {
+        return localPart;
+    }
+
+    /**
+     * @category GETSET
+     */
+    public void setLocalPart(CaseInsensitiveLocalPartSpecification localPart) {
+        this.localPart = localPart;
     }
 
 }

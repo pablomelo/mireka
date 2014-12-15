@@ -1,6 +1,6 @@
 package mireka.transmission.immediate;
 
-import mireka.smtp.MailSystemStatus;
+import mireka.transmission.MailSystemStatus;
 import mireka.util.Multiline;
 
 import org.subethamail.smtp.client.SMTPClient.Response;

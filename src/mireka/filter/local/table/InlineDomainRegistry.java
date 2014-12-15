@@ -13,8 +13,8 @@ import mireka.address.RemotePart;
  * to its name this container also accepts {@link AddressLiteral}, but that is
  * rarely used if ever.
  */
-public class InlineDomainRegistry implements RemotePartSpecification {
-    private final Set<RemotePart> remoteParts = new HashSet<RemotePart>();
+public class InlineDomainRegistry implements DomainSpecification {
+    private Set<RemotePart> remoteParts = new HashSet<RemotePart>();
 
     @Override
     public boolean isSatisfiedBy(RemotePart remotePart) {
@@ -22,15 +22,6 @@ public class InlineDomainRegistry implements RemotePartSpecification {
     }
 
     public void addDomain(String remotePart) {
-        remoteParts.add(new MailAddressFactory()
-                .createRemotePartFromDisplayableText(remotePart));
+        remoteParts.add(new MailAddressFactory().createRemotePart(remotePart));
     }
-
-    public void setRemoteParts(String[] remoteParts) {
-        this.remoteParts.clear();
-        for (String remotePart : remoteParts) {
-            addDomain(remotePart);
-        }
-    }
-
 }

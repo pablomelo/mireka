@@ -1,7 +1,8 @@
 package mireka.filter;
 
 import mireka.MailData;
-import mireka.smtp.RejectExceptionExt;
+
+import org.subethamail.smtp.RejectException;
 
 /**
  * a simpler alternative to {@link Filter}. It must be adapted to {@link Filter}
@@ -15,5 +16,5 @@ public interface DataRecipientFilter extends FilterBase {
      * been run.
      */
     void dataRecipient(MailData data, RecipientContext recipientContext)
-            throws RejectExceptionExt;
+            throws RejectException;
 }

@@ -15,18 +15,9 @@ class MailName implements Comparable<MailName> {
      * not includes extension
      */
     public final String baseFileName;
-    /**
-     * milliseconds from epoch
-     */
     public final long scheduleDate;
     public final int sequenceNumber;
 
-    /**
-     * Creates a new instance by parsing a file name.
-     * 
-     * @param fileName
-     *            the file name to be parsed, without directories.
-     */
     public MailName(String fileName) {
         ParsePosition pos = new ParsePosition(0);
         Date date = parseDate(fileName, pos);
@@ -42,7 +33,7 @@ class MailName implements Comparable<MailName> {
         this.baseFileName = fileName.substring(0, pos.getIndex());
     }
 
-    public MailName(long scheduleDate, int sequenceNumber) {
+    private MailName(long scheduleDate, int sequenceNumber) {
         this.scheduleDate = scheduleDate;
         this.sequenceNumber = sequenceNumber;
         SimpleDateFormat format =
@@ -55,8 +46,9 @@ class MailName implements Comparable<MailName> {
 
     private Date parseDate(String baseFileName, ParsePosition parsePosition) {
         String dateString =
-                baseFileName.substring(parsePosition.getIndex(),
-                        parsePosition.getIndex() + ISO_DATE_LENGTH);
+                baseFileName.substring(parsePosition.getIndex(), parsePosition
+                        .getIndex()
+                        + ISO_DATE_LENGTH);
         SimpleDateFormat format =
                 new SimpleDateFormat(ISO_DATE_FORMAT, Locale.US);
         Date date;
@@ -85,12 +77,16 @@ class MailName implements Comparable<MailName> {
 
     private int parseSequenceNumber(String s, ParsePosition parsePosition) {
         StringBuilder sequenceString = new StringBuilder();
+        int i = parsePosition.getIndex();
         char ch;
-        while (Character.isDigit(ch = s.charAt(parsePosition.getIndex()))) {
+        while (Character.isDigit(ch = s.charAt(i++))) {
             sequenceString.append(ch);
-            incrementParsePosition(parsePosition);
         }
         return Integer.parseInt(sequenceString.toString());
+    }
+
+    public static MailName create(Date scheduleDate) {
+        return new MailName(scheduleDate.getTime(), 0);
     }
 
     public String envelopeFileName() {
@@ -99,6 +95,10 @@ class MailName implements Comparable<MailName> {
 
     public String contentFileName() {
         return baseFileName + MESSAGE_CONTENT_DOT_EXTENSION;
+    }
+
+    public MailName nextInSequence() {
+        return new MailName(scheduleDate, sequenceNumber + 1);
     }
 
     @Override

@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import mireka.address.Recipient;
-import mireka.destination.Destination;
+import mireka.filter.Destination;
 
 /**
  * RecipientTable contains a list of other {@link RecipientDestinationMapper}
@@ -19,18 +19,14 @@ public class RecipientTable implements RecipientDestinationMapper {
     public Destination lookup(Recipient recipient) {
         for (RecipientDestinationMapper mapper : mappers) {
             Destination destination = mapper.lookup(recipient);
-            if (destination != null)
+            if (!destination.equals(UnknownRecipient.INSTANCE))
                 return destination;
         }
-        return null;
+        return UnknownRecipient.INSTANCE;
     }
 
     public void addMapper(RecipientDestinationMapper mapper) {
         mappers.add(mapper);
     }
 
-    public void setMappers(List<RecipientDestinationMapper> mappers) {
-        this.mappers.clear();
-        this.mappers.addAll(mappers);
-    }
 }

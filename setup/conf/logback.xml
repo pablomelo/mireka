@@ -13,7 +13,7 @@
 			<level>info</level>
 		</filter>
 		<encoder>
-			<pattern>%date %-29([%3.3(%X{smtpServerLocalSocketAddress}%X{localServerSocketAddress})] [%.21thread]) %-5level %logger{20} %m %ex%n</pattern>
+			<pattern>%date %-29([%3.3X{smtpServerLocalSocketAddress}] [%.21thread]) %-5level %logger{20} %m %ex%n</pattern>
 		</encoder>
 	</appender>
 
@@ -25,7 +25,7 @@
 	</evaluator>
 	
 	<appender class="ch.qos.logback.core.rolling.RollingFileAppender"
-		name="ACCESS">
+		name="Access">
 		<file>${log.dir}/access.log</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
 			<FileNamePattern>${log.dir}/access.%d{yyyy-MM-dd}.log</FileNamePattern>
@@ -33,23 +33,7 @@
 			<MaxHistory>90</MaxHistory>
 		</rollingPolicy>		
 		<encoder>
-			<pattern>%date %-29([%3.3(%X{smtpServerLocalSocketAddress}%X{localServerSocketAddress})] [%.21thread]) %-5level %logger{20} %m %ex{full, SUPRESS_TRACE_EVAL}%n</pattern>
-		</encoder>
-	</appender>
-
-	<appender class="ch.qos.logback.core.rolling.RollingFileAppender"
-		name="ERROR">
-		<file>${log.dir}/error.log</file>
-		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-			<level>info</level>
-		</filter>
-		<rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-			<FileNamePattern>${log.dir}/error.%d{yyyy-MM-dd}.log</FileNamePattern>
-			<!-- keep specified number of log files of history -->
-			<MaxHistory>90</MaxHistory>
-		</rollingPolicy>		
-		<encoder>
-			<pattern>%date %-29([%3.3(%X{smtpServerLocalSocketAddress}%X{localServerSocketAddress})] [%.21thread]) %-5level %logger{20} %m %ex{full, SUPRESS_TRACE_EVAL}%n</pattern>
+			<pattern>%date %-29([%3.3X{smtpServerLocalSocketAddress}] [%.21thread]) %-5level %logger{20} %m %ex{full, SUPRESS_TRACE_EVAL}%n</pattern>
 		</encoder>
 	</appender>
 
@@ -68,20 +52,15 @@
 			<OnMatch>ACCEPT</OnMatch>
 		</filter>
 		<encoder>
-			<pattern>%date %-29([%3.3(%X{smtpServerLocalSocketAddress}%X{localServerSocketAddress})] [%.21thread]) %-5level %logger{20} %m %ex%n</pattern>
+			<pattern>%date %-29([%3.3X{smtpServerLocalSocketAddress}] [%.21thread]) %-5level %logger{20} %m %ex%n</pattern>
 		</encoder>
 	</appender>
 	-->
 
-	<appender name="METRICS"
-		class="com.yammer.metrics.logback.InstrumentedAppender" />
-		
 	<root>
 		<level value="warn" />
 		<appender-ref ref="STDERR" />
-		<appender-ref ref="ACCESS" />
-		<appender-ref ref="ERROR" />
-		<appender-ref ref="METRICS" />
+		<appender-ref ref="Access" />
 	</root>
 
 	<logger name="mireka">

@@ -1,6 +1,5 @@
 /**
- * Contains the filter API; filters follow an SMTP transaction and may respond 
- * to individual SMTP commands. 
+ * Contains the filter API.
  */
 package mireka.filter;
 

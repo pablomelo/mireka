@@ -1,24 +1,26 @@
 package mireka.filter.misc;
 
+import javax.annotation.concurrent.GuardedBy;
+
+import mireka.UnknownUserException;
 import mireka.filter.AbstractFilter;
 import mireka.filter.Filter;
 import mireka.filter.FilterReply;
 import mireka.filter.FilterType;
 import mireka.filter.MailTransaction;
 import mireka.filter.RecipientContext;
-import mireka.smtp.RejectExceptionExt;
-import mireka.smtp.UnknownUserException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.subethamail.smtp.RejectException;
 
 /**
- * The TarpitOnGlobalRejections filter slows down replies to RCPT command on all
- * connections if unknown recipients are submitted by a client.
+ * slows down replies to RCPT command on all connections
  */
 public class TarpitOnGlobalRejections implements FilterType {
-    private final Logger logger = LoggerFactory
-            .getLogger(TarpitOnGlobalRejections.class);
+    private final Logger logger =
+            LoggerFactory.getLogger(TarpitOnGlobalRejections.class);
+    @GuardedBy(value = "itself")
     private final Tarpit tarpit = new Tarpit();
 
     @Override
@@ -34,7 +36,7 @@ public class TarpitOnGlobalRejections implements FilterType {
 
         @Override
         public FilterReply verifyRecipient(RecipientContext recipientContext)
-                throws RejectExceptionExt {
+                throws RejectException {
             try {
                 return chain.verifyRecipient(recipientContext);
             } catch (UnknownUserException e) {
@@ -45,8 +47,7 @@ public class TarpitOnGlobalRejections implements FilterType {
         }
 
         @Override
-        public void recipient(RecipientContext recipientContext)
-                throws RejectExceptionExt {
+        public void recipient(RecipientContext recipientContext) throws RejectException {
             try {
                 chain.recipient(recipientContext);
             } catch (UnknownUserException e) {

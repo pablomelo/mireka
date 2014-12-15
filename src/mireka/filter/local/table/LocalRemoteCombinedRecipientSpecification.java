@@ -22,12 +22,12 @@ public class LocalRemoteCombinedRecipientSpecification implements
 
     @Override
     public boolean isSatisfiedBy(Recipient recipient) {
-        if (!localPartSpecification.isSatisfiedBy(recipient.localPart()))
+        if (!localPartSpecification.matches(recipient.localPart()))
             return false;
         if (!(recipient instanceof RemotePartContainingRecipient))
             return false;
         RemotePart recipientRemotePart =
-                ((RemotePartContainingRecipient) recipient).getMailbox()
+                ((RemotePartContainingRecipient) recipient).getAddress()
                         .getRemotePart();
         return remotePart.equals(recipientRemotePart);
     }

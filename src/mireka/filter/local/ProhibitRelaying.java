@@ -10,7 +10,7 @@ import mireka.address.RemotePartContainingRecipient;
 import mireka.filter.FilterReply;
 import mireka.filter.RecipientContext;
 import mireka.filter.StatelessFilterType;
-import mireka.filter.local.table.RemotePartSpecification;
+import mireka.filter.local.table.DomainSpecification;
 
 import org.subethamail.smtp.RejectException;
 
@@ -20,8 +20,8 @@ import org.subethamail.smtp.RejectException;
  * postmaster address.
  */
 public class ProhibitRelaying extends StatelessFilterType {
-    private List<RemotePartSpecification> localDomainSpecifications =
-            new ArrayList<RemotePartSpecification>();
+    private List<DomainSpecification> localDomainSpecifications =
+            new ArrayList<DomainSpecification>();
 
     @Override
     public FilterReply verifyRecipient(RecipientContext recipientContext)
@@ -37,9 +37,9 @@ public class ProhibitRelaying extends StatelessFilterType {
 
     private FilterReply verifyRemotePartContainingRecipient(
             RemotePartContainingRecipient recipient) throws RejectException {
-        RemotePart remotePart = recipient.getMailbox().getRemotePart();
-        for (RemotePartSpecification remotePartSpecification : localDomainSpecifications) {
-            if (remotePartSpecification.isSatisfiedBy(remotePart))
+        RemotePart remotePart = recipient.getAddress().getRemotePart();
+        for (DomainSpecification domainSpecification : localDomainSpecifications) {
+            if (domainSpecification.isSatisfiedBy(remotePart))
                 return FilterReply.NEUTRAL;
         }
         throw new RejectException(550,
@@ -48,16 +48,9 @@ public class ProhibitRelaying extends StatelessFilterType {
     }
 
     public void addLocalDomainSpecification(
-            RemotePartSpecification remotePartSpecification) {
-        if (remotePartSpecification == null)
+            DomainSpecification domainSpecification) {
+        if (domainSpecification == null)
             throw new NullPointerException();
-        localDomainSpecifications.add(remotePartSpecification);
-    }
-
-    public void setLocalDomainSpecifications(
-            List<RemotePartSpecification> specifications) {
-        this.localDomainSpecifications.clear();
-        for (RemotePartSpecification specification : specifications)
-            addLocalDomainSpecification(specification);
+        localDomainSpecifications.add(domainSpecification);
     }
 }

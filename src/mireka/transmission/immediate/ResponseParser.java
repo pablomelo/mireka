@@ -4,21 +4,18 @@ import java.text.ParseException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import mireka.smtp.EnhancedStatus;
-import mireka.smtp.MailSystemStatus;
+import mireka.transmission.EnhancedStatus;
+import mireka.transmission.MailSystemStatus;
 import mireka.util.MultilineParser;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.client.SMTPClient.Response;
 
-/**
- * ResponseParser parses an SMTP reply to separate basic status code, 
- * enhanced status code, textual message.
- */
-class ResponseParser {
-    private static final Pattern pattern = Pattern.compile("\\A([245]\\."
-            + "(0|([1-9]\\d{0,2}))\\." + "(0|([1-9]\\d{0,2})))\\ ");
+public class ResponseParser {
+    private static final Pattern pattern =
+            Pattern.compile("\\A([245]\\." + "(0|([1-9]\\d{0,2}))\\."
+                    + "(0|([1-9]\\d{0,2})))\\ ");
     private final Logger logger = LoggerFactory.getLogger(ResponseParser.class);
 
     public MailSystemStatus createResponseLookingForEnhancedStatusCode(

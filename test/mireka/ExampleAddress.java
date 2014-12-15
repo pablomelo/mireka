@@ -2,16 +2,16 @@ package mireka;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.text.ParseException;
+
+import javax.mail.internet.ParseException;
+
+import org.xbill.DNS.Name;
+import org.xbill.DNS.TextParseException;
 
 import mireka.address.Domain;
 import mireka.address.GlobalPostmaster;
 import mireka.address.MailAddressFactory;
 import mireka.address.Recipient;
-import mireka.address.ReversePath;
-
-import org.xbill.DNS.Name;
-import org.xbill.DNS.TextParseException;
 
 public class ExampleAddress {
     /**
@@ -27,18 +27,13 @@ public class ExampleAddress {
     public static final String IP_STRING = "192.0.2.0";
     public static final InetAddress IP_ADDRESS_ONLY;
     public static final InetAddress IPV6;
-    public static final String ADDRESS_LITERAL = "[192.0.2.0]";
+    public static final String ADDRESS_LITERAL = "[192.168.0.0]";
     public static final String JANE = "jane@example.com";
     public static final String JOHN = "john@example.com";
     public static final String NANCY_NET = "nancy@example.net";
-    /** jane@example.com **/
     public static final Recipient JANE_AS_RECIPIENT;
-    /** john@example.com **/
     public static final Recipient JOHN_AS_RECIPIENT;
-    /** nancy@example.net **/
     public static final Recipient NANCY_NET_AS_RECIPIENT;
-    public static final ReversePath JANE_AS_REVERSE_PATH;
-    public static final ReversePath JOHN_AS_REVERSE_PATH;
     public static final String ADA_ADDRESS = "ada@[" + IP_STRING + "]";
     public static final Recipient ADA_ADDRESS_LITERAL_AS_RECIPIENT;
     public static final String ALBERT_ADDRESS = "albert@[" + IP_STRING + "]";
@@ -83,10 +78,6 @@ public class ExampleAddress {
             JOHN_AS_RECIPIENT = new MailAddressFactory().createRecipient(JOHN);
             NANCY_NET_AS_RECIPIENT =
                     new MailAddressFactory().createRecipient(NANCY_NET);
-            JANE_AS_REVERSE_PATH =
-                    new MailAddressFactory().createReversePath(JANE);
-            JOHN_AS_REVERSE_PATH =
-                    new MailAddressFactory().createReversePath(JOHN);
             ADA_ADDRESS_LITERAL_AS_RECIPIENT =
                     new MailAddressFactory().createRecipient(ADA_ADDRESS);
             ALBERT_ADDRESS_LITERAL_AS_RECIPIENT =

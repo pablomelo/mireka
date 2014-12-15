@@ -5,10 +5,17 @@ package mireka.address;
  * global nor the special domain specific postmaster address.
  */
 public class GenericRecipient implements RemotePartContainingRecipient {
-    private final Mailbox mailbox;
+    private final String forwardPath;
+    private Address address;
 
-    public GenericRecipient(Mailbox mailbox) {
-        this.mailbox = mailbox;
+    public GenericRecipient(String recipient) {
+        this.forwardPath = recipient;
+        parseAddress();
+    }
+
+    private void parseAddress() {
+        String mailbox = sourceRouteStripped();
+        address = new Address(mailbox);
     }
 
     public boolean isPostmaster() {
@@ -25,19 +32,25 @@ public class GenericRecipient implements RemotePartContainingRecipient {
 
     @Override
     public LocalPart localPart() {
-        return mailbox.getLocalPart();
+        return address.getLocalPart();
     }
 
     public String sourceRouteStripped() {
-        return mailbox.toString();
+        String mailBox;
+        int iColon = forwardPath.indexOf(':');
+        if (iColon == -1)
+            mailBox = forwardPath;
+        else
+            mailBox = forwardPath.substring(iColon + 1, forwardPath.length());
+        return mailBox;
     }
 
-    public Mailbox getMailbox() {
-        return mailbox;
+    public Address getAddress() {
+        return address;
     }
 
     @Override
     public String toString() {
-        return mailbox.toString();
+        return forwardPath;
     }
 }

@@ -3,12 +3,10 @@ package mireka.submission;
 import java.util.ArrayList;
 import java.util.List;
 
-import mireka.address.ReversePath;
 import mireka.filter.AbstractFilter;
 import mireka.filter.Filter;
 import mireka.filter.FilterType;
 import mireka.filter.MailTransaction;
-import mireka.smtp.RejectExceptionExt;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,20 +19,14 @@ public class RejectIfUnauthenticated implements FilterType {
     private final List<MailTransactionSpecification> specifications =
             new ArrayList<MailTransactionSpecification>();
 
-    @Override
-    public Filter createInstance(MailTransaction mailTransaction) {
-        return new FilterImpl(mailTransaction);
-    }
-
     public void addAuthenticatedSpecification(
             MailTransactionSpecification specification) {
         specifications.add(specification);
     }
 
-    public void setAuthenticatedSpecifications(
-            List<MailTransactionSpecification> specifications) {
-        this.specifications.clear();
-        this.specifications.addAll(specifications);
+    @Override
+    public Filter createInstance(MailTransaction mailTransaction) {
+        return new FilterImpl(mailTransaction);
     }
 
     private class FilterImpl extends AbstractFilter {
@@ -45,7 +37,7 @@ public class RejectIfUnauthenticated implements FilterType {
         }
 
         @Override
-        public void from(ReversePath from) throws RejectExceptionExt {
+        public void from(String from) throws RejectException {
             if (!isAuthenticated()) {
                 logger.debug("None of the authentication specifications "
                         + "matched the session, rejecting");

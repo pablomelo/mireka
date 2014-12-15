@@ -2,14 +2,12 @@ package mireka.filter;
 
 import mireka.ConfigurationException;
 import mireka.address.Recipient;
-import mireka.destination.Destination;
 
 /**
  * RecipientContext collects information about a specific recipient during the
  * mail transaction.
  */
 public class RecipientContext {
-    private final MailTransaction mailTransaction;
     public final Recipient recipient;
     private Destination destination;
     /**
@@ -20,13 +18,8 @@ public class RecipientContext {
      */
     public boolean isResponsibilityTransferred;
 
-    public RecipientContext(MailTransaction mailTransaction, Recipient recipient) {
-        this.mailTransaction = mailTransaction;
+    public RecipientContext(Recipient recipient) {
         this.recipient = recipient;
-    }
-
-    public boolean isDestinationAssigned() {
-        return destination != null;
     }
 
     /**
@@ -37,24 +30,14 @@ public class RecipientContext {
     }
 
     /**
-     * @throws ConfigurationException
-     *             if no destination is assigned yet
-     */
-    public Destination getDestination() throws ConfigurationException {
-        if (destination == null)
-            throw new ConfigurationException(
-                    "Destination has not been assigned to recipient "
-                            + recipient
-                            + " (or to the final recipient if this "
-                            + "is an alias) yet by the filter chain, "
-                            + "this is likely caused by wrong configuration");
-        return destination;
-    }
-
-    /**
      * @category GETSET
      */
-    public MailTransaction getMailTransaction() {
-        return mailTransaction;
+    public Destination getDestination() {
+        if (destination == null)
+            throw new ConfigurationException(
+                    "Destination is not assigned to recipient " + recipient
+                            + " yet, this is likely caused by "
+                            + "wrong configuration");
+        return destination;
     }
 }

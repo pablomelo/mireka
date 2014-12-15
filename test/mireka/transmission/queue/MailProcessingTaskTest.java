@@ -5,7 +5,7 @@ import static org.mockito.Mockito.*;
 
 import java.util.Date;
 
-import mireka.smtp.EnhancedStatus;
+import mireka.transmission.EnhancedStatus;
 import mireka.transmission.LocalMailSystemException;
 import mireka.transmission.Mail;
 
@@ -30,7 +30,7 @@ public class MailProcessingTaskTest {
     @Mock
     private MailProcessor mockedMailProcessor;
     private MailProcessingTask task;
-    private MailName mailName = new MailName(new Date().getTime(), 0);
+    private MailName mailName = MailName.create(new Date());
 
     @Before
     public void initialize() {
