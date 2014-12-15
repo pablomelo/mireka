@@ -13,6 +13,12 @@ public class InlineRecipientRegistry implements RecipientSpecification {
     private final List<RecipientSpecification> recipientSpecifications =
             new ArrayList<RecipientSpecification>();
 
+    public void addAddress(String address) {
+        RecipientSpecification specification =
+                new RecipientSpecificationFactory().create(address);
+        recipientSpecifications.add(specification);
+    }
+
     @Override
     public boolean isSatisfiedBy(Recipient recipient) {
         for (RecipientSpecification specification : recipientSpecifications) {
@@ -20,18 +26,5 @@ public class InlineRecipientRegistry implements RecipientSpecification {
                 return true;
         }
         return false;
-    }
-
-    public void addAddress(String address) {
-        RecipientSpecification specification =
-                new RecipientSpecificationFactory().create(address);
-        recipientSpecifications.add(specification);
-    }
-
-    public void setAddresses(List<String> addresses) {
-        this.recipientSpecifications.clear();
-        for (String address : addresses) {
-            addAddress(address);
-        }
     }
 }

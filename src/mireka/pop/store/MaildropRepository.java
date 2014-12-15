@@ -15,7 +15,7 @@ public class MaildropRepository {
     /**
      * The directory where the individual maildrop directories are residing.
      */
-    private String dir;
+    private File dir;
     @GuardedBy("this")
     private Map<String, MaildropSlot> openMaildrops =
             new HashMap<String, MaildropSlot>();
@@ -53,8 +53,15 @@ public class MaildropRepository {
     /**
      * @category GETSET
      */
-    public void setDir(String dir) {
+    public void setDir(File dir) {
         this.dir = dir;
+    }
+
+    /**
+     * @category GETSET
+     */
+    public File getDir() {
+        return dir;
     }
 
     private static class MaildropSlot {

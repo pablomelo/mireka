@@ -37,12 +37,6 @@ public class AliasMapper implements RecipientDestinationMapper {
         aliases.add(recipientSpecification);
     }
 
-    public void setAliases(List<String> aliases) {
-        this.aliases.clear();
-        for (String alias : aliases)
-            addAlias(alias);
-    }
-
     /**
      * GETSET
      */

@@ -1,7 +1,7 @@
 package mireka.transmission.dsn;
 
 import static mireka.ExampleAddress.*;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,12 +18,11 @@ import mireka.ExampleMail;
 import mireka.MailData;
 import mireka.address.MailAddressFactory;
 import mireka.smtp.EnhancedStatus;
-import mireka.smtp.client.MtaAddress;
 import mireka.transmission.Mail;
+import mireka.transmission.immediate.RemoteMta;
 import mireka.transmission.immediate.Rfc821Status;
 
-import org.apache.james.mime4j.dom.Message;
-import org.apache.james.mime4j.message.DefaultMessageBuilder;
+import org.apache.james.mime4j.message.Message;
 import org.junit.Test;
 import org.subethamail.smtp.client.SMTPClient.Response;
 
@@ -42,7 +41,7 @@ public class DsnMailCreatorTest {
         dsnMail.mailData.writeTo(out);
         byte[] bytes = out.toByteArray();
         ByteArrayInputStream in = new ByteArrayInputStream(bytes);
-        Message message = new DefaultMessageBuilder().parseMessage(in);
+        Message message = new Message(in);
         assertEquals(message.getMimeType(), "multipart/report");
     }
 
@@ -50,10 +49,7 @@ public class DsnMailCreatorTest {
         NameAddr from =
                 new NameAddr("Mail Delivery Subsystem",
                         "mailer-daemon@example.com");
-        DsnMailCreator dsnMailCreator = new DsnMailCreator();
-        dsnMailCreator.setReportingMtaName(IP2.getHostName());
-        dsnMailCreator.setFromAddress(from);
-        return dsnMailCreator;
+        return new DsnMailCreator(IP2.getHostName(), from);
     }
 
     static List<RecipientProblemReport> createRecipientFailure()
@@ -69,7 +65,7 @@ public class DsnMailCreatorTest {
         f.remoteMtaDiagnosticStatus =
                 new Rfc821Status(new Response(550,
                         "Requested action not taken: mailbox unavailable"));
-        f.remoteMta = new MtaAddress(HOST3_EXAMPLE_COM, IP3);
+        f.remoteMta = new RemoteMta(IP3.getHostName());
         f.failureDate = new Date();
         f.logId = "NO_1_ENTRY";
         return Collections.singletonList((RecipientProblemReport) f);
@@ -87,7 +83,8 @@ public class DsnMailCreatorTest {
             throws FileNotFoundException, IOException {
         File file =
                 new File(System.getProperty("java.io.tmpdir"), getClass()
-                        .getSimpleName() + ".eml");
+                        .getSimpleName()
+                        + ".eml");
         FileOutputStream fout = new FileOutputStream(file);
         content.writeTo(fout);
         fout.close();

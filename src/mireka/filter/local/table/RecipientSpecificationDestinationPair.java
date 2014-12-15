@@ -37,26 +37,6 @@ public class RecipientSpecificationDestinationPair implements
     /**
      * @category GETSET
      */
-    public void setRecipientSpecification(
-            RecipientSpecification recipientSpecification) {
-        this.recipientSpecifications.clear();
-        this.recipientSpecifications.add(recipientSpecification);
-    }
-
-    /**
-     * @category GETSET
-     */
-    public void setRecipientSpecifications(
-            List<RecipientSpecification> recipientSpecifications) {
-        this.recipientSpecifications.clear();
-        for (RecipientSpecification recipientSpecification : recipientSpecifications) {
-            addRecipientSpecification(recipientSpecification);
-        }
-    }
-
-    /**
-     * @category GETSET
-     */
     public void setDestination(Destination destination) {
         this.destination = destination;
     }

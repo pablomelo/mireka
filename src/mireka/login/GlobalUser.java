@@ -13,15 +13,15 @@ public class GlobalUser {
     /**
      * @category GETSET
      */
-    public Username getUsernameObject() {
+    public Username getUsername() {
         return username;
     }
 
     /**
      * @category GETSET
      */
-    public void setUsername(String username) {
-        this.username = new Username(username);
+    public void setUsername(Username username) {
+        this.username = username;
     }
 
     /**

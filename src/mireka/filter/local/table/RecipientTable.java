@@ -29,8 +29,4 @@ public class RecipientTable implements RecipientDestinationMapper {
         mappers.add(mapper);
     }
 
-    public void setMappers(List<RecipientDestinationMapper> mappers) {
-        this.mappers.clear();
-        this.mappers.addAll(mappers);
-    }
 }

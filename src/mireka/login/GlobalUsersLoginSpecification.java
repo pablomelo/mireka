@@ -18,6 +18,17 @@ public class GlobalUsersLoginSpecification implements LoginSpecification {
     private final Map<Username, Principal> usernamePrincipalMap =
             new HashMap<Username, Principal>();
 
+    public void setUsers(GlobalUsers users) {
+        if (!usernamePasswordMap.isEmpty())
+            throw new IllegalStateException();
+
+        for (GlobalUser user : users) {
+            usernamePasswordMap.put(user.getUsername(), user.getPassword());
+            usernamePrincipalMap.put(user.getUsername(), new Principal(user
+                    .getUsername().toString()));
+        }
+    }
+
     @Override
     public LoginResult evaluatePlain(String usernameString, String password) {
         Username username = new Username(usernameString);
@@ -58,18 +69,6 @@ public class GlobalUsersLoginSpecification implements LoginSpecification {
                     usernamePrincipalMap.get(username));
         } else {
             return new LoginResult(LoginDecision.INVALID, null);
-        }
-    }
-
-    public void setUsers(GlobalUsers users) {
-        if (!usernamePasswordMap.isEmpty())
-            throw new IllegalStateException();
-
-        for (GlobalUser user : users) {
-            usernamePasswordMap.put(user.getUsernameObject(),
-                    user.getPassword());
-            usernamePrincipalMap.put(user.getUsernameObject(), new Principal(
-                    user.getUsernameObject().toString()));
         }
     }
 }

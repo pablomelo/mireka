@@ -53,11 +53,4 @@ public class ProhibitRelaying extends StatelessFilterType {
             throw new NullPointerException();
         localDomainSpecifications.add(remotePartSpecification);
     }
-
-    public void setLocalDomainSpecifications(
-            List<RemotePartSpecification> specifications) {
-        this.localDomainSpecifications.clear();
-        for (RemotePartSpecification specification : specifications)
-            addLocalDomainSpecification(specification);
-    }
 }

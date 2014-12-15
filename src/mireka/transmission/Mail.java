@@ -82,10 +82,6 @@ public class Mail {
         return result;
     }
 
-    /**
-     * Returns a short descriptive information about the mail, useful for 
-     * logging. 
-     */
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

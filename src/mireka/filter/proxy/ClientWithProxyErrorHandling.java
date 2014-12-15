@@ -4,12 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import mireka.address.Recipient;
-import mireka.smtp.SendException;
-import mireka.smtp.client.BackendServer;
-import mireka.smtp.client.SmtpClient;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.RejectException;
 import org.subethamail.smtp.TooMuchDataException;
 import org.subethamail.smtp.client.SMTPException;
@@ -21,8 +16,6 @@ import org.subethamail.smtp.client.SmartClient;
  * SMTP errors which are valid from the viewpoint of the original sender.
  */
 class ClientWithProxyErrorHandling {
-    private final Logger logger = LoggerFactory
-            .getLogger(ClientWithProxyErrorHandling.class);
 
     private final BackendServer backend;
     private final SmartClient smartClient;
@@ -35,23 +28,14 @@ class ClientWithProxyErrorHandling {
 
     private SmartClient connect() throws BackendRejectException,
             RejectException {
-        SmtpClient client;
         try {
-            client = backend.createClient();
-        } catch (SendException e) {
-            throw new RejectException(e.errorStatus().getSmtpReplyCode(), e.errorStatus().getMessage());
-        }
-        try {
-            client.connect();
+            return backend.connect();
         } catch (SMTPException e) {
             throw new BackendRejectException(e,
                     " - Backend rejected connection");
         } catch (IOException e) {
-            logger.error(
-                    "Error while communicating with " + backend.toString(), e);
-            throw new RejectException(451, "Local error in processing.");
+            throw new RejectException(451, e.getMessage());
         }
-        return client;
     }
 
     public void from(String from) throws BackendRejectException,

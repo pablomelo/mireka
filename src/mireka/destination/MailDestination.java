@@ -4,9 +4,8 @@ import mireka.smtp.RejectExceptionExt;
 import mireka.transmission.Mail;
 
 /**
- * A MailDestination is a {@link ResponsibleDestination} which is only interested 
- * in the complete mail at the end of the mail transaction, not in the steps of 
- * the mail transaction. 
+ * MailDestination is a {@link ResponsibleDestination} which is able to deliver
+ * the complete mail at the end of an SMTP mail transaction.
  */
 public interface MailDestination extends ResponsibleDestination {
     /**

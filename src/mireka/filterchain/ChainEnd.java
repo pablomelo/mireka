@@ -37,8 +37,7 @@ class ChainEnd implements FilterChain {
     }
 
     @Override
-    public void recipient(RecipientContext recipientContext)
-            throws RejectException {
+    public void recipient(RecipientContext recipientContext) throws RejectException {
         // do nothing
     }
 

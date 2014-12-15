@@ -21,20 +21,14 @@ public class RejectIfUnauthenticated implements FilterType {
     private final List<MailTransactionSpecification> specifications =
             new ArrayList<MailTransactionSpecification>();
 
-    @Override
-    public Filter createInstance(MailTransaction mailTransaction) {
-        return new FilterImpl(mailTransaction);
-    }
-
     public void addAuthenticatedSpecification(
             MailTransactionSpecification specification) {
         specifications.add(specification);
     }
 
-    public void setAuthenticatedSpecifications(
-            List<MailTransactionSpecification> specifications) {
-        this.specifications.clear();
-        this.specifications.addAll(specifications);
+    @Override
+    public Filter createInstance(MailTransaction mailTransaction) {
+        return new FilterImpl(mailTransaction);
     }
 
     private class FilterImpl extends AbstractFilter {

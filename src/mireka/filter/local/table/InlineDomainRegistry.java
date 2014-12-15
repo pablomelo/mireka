@@ -14,7 +14,7 @@ import mireka.address.RemotePart;
  * rarely used if ever.
  */
 public class InlineDomainRegistry implements RemotePartSpecification {
-    private final Set<RemotePart> remoteParts = new HashSet<RemotePart>();
+    private Set<RemotePart> remoteParts = new HashSet<RemotePart>();
 
     @Override
     public boolean isSatisfiedBy(RemotePart remotePart) {
@@ -25,12 +25,4 @@ public class InlineDomainRegistry implements RemotePartSpecification {
         remoteParts.add(new MailAddressFactory()
                 .createRemotePartFromDisplayableText(remotePart));
     }
-
-    public void setRemoteParts(String[] remoteParts) {
-        this.remoteParts.clear();
-        for (String remotePart : remoteParts) {
-            addDomain(remotePart);
-        }
-    }
-
 }

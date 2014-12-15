@@ -23,8 +23,7 @@ class ServerThread extends Thread {
     private final Semaphore connectionPermits;
     private volatile boolean shuttingDown;
     @GuardedBy("this")
-    private final Set<SessionThread> sessionThreads =
-            new HashSet<SessionThread>(200);
+    private final Set<SessionThread> sessionThreads = new HashSet<SessionThread>(200);
 
     ServerThread(ServerSocket serverSocket, PopServer server) {
         super(ServerThread.class.getName() + " "
@@ -74,7 +73,7 @@ class ServerThread extends Thread {
         }
 
         closeServerSocket();
-        logger.info("POP server {} stopped accepting connections",
+        logger.info("POP server {} stopped",
                 server.getDisplayableLocalSocketAddress());
         MDC.remove("localServerSocketAddress");
     }
@@ -82,22 +81,12 @@ class ServerThread extends Thread {
     public void shutdown() {
         shutdownServerSocket();
         shutdownSessions();
-        try {
-            awaitTermination();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
     }
 
     private void shutdownServerSocket() {
         shuttingDown = true;
-        this.interrupt();
         closeServerSocket();
-        try {
-            this.join();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
+        interrupt();
     }
 
     private void shutdownSessions() {
@@ -105,16 +94,6 @@ class ServerThread extends Thread {
             for (SessionThread sessionThread : sessionThreads) {
                 sessionThread.shutdown();
             }
-        }
-    }
-
-    private void awaitTermination() throws InterruptedException {
-        Set<SessionThread> stillRunningSessionThreads;
-        synchronized (this) {
-            stillRunningSessionThreads = new HashSet<>(this.sessionThreads);
-        }
-        for (SessionThread sessionThread : stillRunningSessionThreads) {
-            sessionThread.join();
         }
     }
 

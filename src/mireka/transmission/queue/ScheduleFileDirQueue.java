@@ -120,13 +120,6 @@ public class ScheduleFileDirQueue {
         this.executor = executor;
     }
 
-    /**
-     * @category GETSET
-     */
-    public void setThreadCount(int count) {
-        this.executor = new ScheduledThreadPoolExecutor(count);
-    }
-
     @Override
     public String toString() {
         return "ScheduleFileDirQueue [store=" + store + "]";

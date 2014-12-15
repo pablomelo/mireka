@@ -1,6 +1,6 @@
 package mireka.transmission.dsn;
 
-import org.apache.james.mime4j.dom.address.Mailbox;
+import org.apache.james.mime4j.field.address.Mailbox;
 
 /**
  * NameAddr class contains a display-name and an addr-spec.
@@ -11,10 +11,6 @@ import org.apache.james.mime4j.dom.address.Mailbox;
 public class NameAddr {
     private String displayName;
     private String addressSpec;
-
-    public NameAddr() {
-        // setters will be used to set attributes
-    }
 
     public NameAddr(String displayName, String addressSpec) {
         this.displayName = displayName;
@@ -29,13 +25,5 @@ public class NameAddr {
         String localPart = addressSpec.substring(0, iAt);
         String domain = addressSpec.substring(iAt + 1);
         return new Mailbox(displayName, localPart, domain);
-    }
-
-    public void setDisplayName(String displayName) {
-        this.displayName = displayName;
-    }
-
-    public void setAddressSpec(String addressSpec) {
-        this.addressSpec = addressSpec;
     }
 }

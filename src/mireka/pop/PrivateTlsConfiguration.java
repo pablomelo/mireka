@@ -10,6 +10,8 @@ import java.security.KeyStore;
 import java.util.Arrays;
 
 import javax.annotation.PostConstruct;
+import javax.inject.Inject;
+import javax.inject.Named;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
@@ -30,8 +32,10 @@ import org.slf4j.LoggerFactory;
  *      Tomcat - The HTTP Connector - SSL Support</a>
  */
 public class PrivateTlsConfiguration implements TlsConfiguration {
-    private final Logger logger = LoggerFactory
-            .getLogger(PrivateTlsConfiguration.class);
+    private final Logger logger = LoggerFactory.getLogger(PrivateTlsConfiguration.class);
+    @Inject
+    @Named("mirekaHome")
+    private File homeDir;
     private boolean enabled = false;
     private String keystoreFile = "conf/keystore.jks";
     private String keystorePass = "changeit";
@@ -59,7 +63,7 @@ public class PrivateTlsConfiguration implements TlsConfiguration {
             logger.debug("Default key store type: " + defaultKeyStoreType);
             KeyStore keyStore = KeyStore.getInstance(defaultKeyStoreType);
             FileInputStream in = null;
-            File actualKeystoreFile = new File(keystoreFile);
+            File actualKeystoreFile = getActualKeystoreFile();
             try {
                 in = new FileInputStream(actualKeystoreFile);
                 keyStore.load(in, keystorePass.toCharArray());
@@ -82,6 +86,14 @@ public class PrivateTlsConfiguration implements TlsConfiguration {
             throw new ConfigurationException(e);
         }
 
+    }
+
+    private File getActualKeystoreFile() {
+        File keystoreFileFile = new File(keystoreFile);
+        if (keystoreFileFile.isAbsolute())
+            return keystoreFileFile;
+        else
+            return new File(homeDir, keystoreFile);
     }
 
     @Override

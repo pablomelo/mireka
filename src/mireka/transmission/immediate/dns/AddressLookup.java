@@ -2,10 +2,9 @@ package mireka.transmission.immediate.dns;
 
 import java.net.InetAddress;
 
-import javax.annotation.concurrent.ThreadSafe;
-
 import mireka.smtp.EnhancedStatus;
-import mireka.smtp.SendException;
+import mireka.transmission.immediate.RemoteMta;
+import mireka.transmission.immediate.SendException;
 
 import org.xbill.DNS.AAAARecord;
 import org.xbill.DNS.ARecord;
@@ -13,24 +12,22 @@ import org.xbill.DNS.Lookup;
 import org.xbill.DNS.Name;
 import org.xbill.DNS.Record;
 
-/**
- * The AddressLookup class queries the IP address of an MTA or domain by
- * querying the A and AAAA records assigned to the domain name of the MTA.
- * <p>
- * This implementation uses Dnsjava, therefore it can provide much more 
- * precise error messages than the InetAddress. It also respects DNS TTL
- * values. 
- */
-@ThreadSafe
 public class AddressLookup {
+    private final Name name;
+    private final RemoteMta remoteMta;
 
-    public InetAddress[] queryAddresses(Name name) throws SendException {
-        Record[] records = queryAddressRecords(name);
+    public AddressLookup(Name name) {
+        this.name = name;
+        this.remoteMta = new RemoteMta(name.toString());
+    }
+
+    public InetAddress[] queryAddresses() throws SendException {
+        Record[] records = queryAddressRecords();
         InetAddress[] addresses = convertAddressRecordsToAddresses(records);
         return addresses;
     }
 
-    private Record[] queryAddressRecords(Name name) throws SendException {
+    private Record[] queryAddressRecords() throws SendException {
         Lookup lookup = new Lookup(name);
         Record[] records = lookup.run();
         switch (lookup.getResult()) {
@@ -39,27 +36,28 @@ public class AddressLookup {
         case Lookup.TYPE_NOT_FOUND:
             throw new SendException("Host " + name + " has no address record ("
                     + lookup.getErrorString() + ")",
-                    EnhancedStatus.PERMANENT_UNABLE_TO_ROUTE);
+                    EnhancedStatus.PERMANENT_UNABLE_TO_ROUTE, remoteMta);
         case Lookup.HOST_NOT_FOUND:
             throw new SendException("Host " + name + " is not found ("
                     + lookup.getErrorString() + ")",
-                    EnhancedStatus.PERMANENT_UNABLE_TO_ROUTE);
+                    EnhancedStatus.PERMANENT_UNABLE_TO_ROUTE, remoteMta);
         case Lookup.TRY_AGAIN:
             throw new SendException(
                     "DNS network failure while looking up address of " + name
                             + ": " + lookup.getErrorString(),
-                    EnhancedStatus.TRANSIENT_DIRECTORY_SERVER_FAILURE);
+                    EnhancedStatus.TRANSIENT_DIRECTORY_SERVER_FAILURE,
+                    remoteMta);
         case Lookup.UNRECOVERABLE:
             throw new SendException(
                     "Unrecoverable DNS error while looking up address of "
                             + name + ": " + lookup.getErrorString(),
-                    EnhancedStatus.PERMANENT_UNABLE_TO_ROUTE);
+                    EnhancedStatus.PERMANENT_UNABLE_TO_ROUTE, remoteMta);
         default:
             throw new SendException(
                     "Unknown DNS status while looking up address of " + name
                             + ": " + lookup.getResult() + ". "
                             + lookup.getErrorString(),
-                    EnhancedStatus.PERMANENT_INTERNAL_ERROR);
+                    EnhancedStatus.PERMANENT_INTERNAL_ERROR, remoteMta);
         }
     }
 

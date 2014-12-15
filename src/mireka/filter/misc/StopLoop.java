@@ -7,8 +7,7 @@ import mireka.filter.StatelessFilterType;
 
 import org.apache.james.mime4j.MimeException;
 import org.apache.james.mime4j.io.MaxLineLimitException;
-import org.apache.james.mime4j.stream.EntityState;
-import org.apache.james.mime4j.stream.MimeTokenStream;
+import org.apache.james.mime4j.parser.MimeTokenStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.subethamail.smtp.RejectException;
@@ -39,14 +38,14 @@ public class StopLoop extends StatelessFilterType {
         int count = 0;
         MimeTokenStream stream = new MimeTokenStream();
         stream.parse(data.getInputStream());
-        for (EntityState state = stream.getState(); state != EntityState.T_END_OF_STREAM; state =
+        for (int state = stream.getState(); state != MimeTokenStream.T_END_OF_STREAM; state =
                 stream.next()) {
             switch (state) {
-            case T_FIELD:
+            case MimeTokenStream.T_FIELD:
                 if ("Received".equalsIgnoreCase(stream.getField().getName()))
                     count++;
                 break;
-            case T_END_HEADER:
+            case MimeTokenStream.T_END_HEADER:
                 stream.stop();
                 break;
             }

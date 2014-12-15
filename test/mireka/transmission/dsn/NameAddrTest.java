@@ -1,8 +1,8 @@
 package mireka.transmission.dsn;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
-import org.apache.james.mime4j.dom.address.Mailbox;
+import org.apache.james.mime4j.field.address.Mailbox;
 import org.junit.Test;
 
 public class NameAddrTest {

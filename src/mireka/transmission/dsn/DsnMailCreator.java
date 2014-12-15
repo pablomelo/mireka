@@ -14,7 +14,6 @@ import mireka.MailData;
 import mireka.address.MailAddressFactory;
 import mireka.address.NullReversePath;
 import mireka.address.Recipient;
-import mireka.address.ReversePath;
 import mireka.smtp.EnhancedStatus;
 import mireka.smtp.MailSystemStatus;
 import mireka.transmission.Mail;
@@ -22,18 +21,18 @@ import mireka.util.DateTimeRfc822Formatter;
 import mireka.util.MultilineParser;
 
 import org.apache.james.mime4j.codec.EncoderUtil;
-import org.apache.james.mime4j.dom.BinaryBody;
-import org.apache.james.mime4j.dom.Message;
-import org.apache.james.mime4j.dom.Multipart;
-import org.apache.james.mime4j.dom.TextBody;
-import org.apache.james.mime4j.dom.address.Mailbox;
-import org.apache.james.mime4j.field.address.AddressBuilder;
-import org.apache.james.mime4j.field.address.ParseException;
-import org.apache.james.mime4j.message.BasicBodyFactory;
+import org.apache.james.mime4j.field.DefaultFieldParser;
+import org.apache.james.mime4j.field.address.Mailbox;
+import org.apache.james.mime4j.message.BinaryBody;
+import org.apache.james.mime4j.message.BodyFactory;
 import org.apache.james.mime4j.message.BodyPart;
-import org.apache.james.mime4j.message.DefaultMessageWriter;
-import org.apache.james.mime4j.message.MessageImpl;
-import org.apache.james.mime4j.message.MultipartImpl;
+import org.apache.james.mime4j.message.Header;
+import org.apache.james.mime4j.message.Message;
+import org.apache.james.mime4j.message.Multipart;
+import org.apache.james.mime4j.message.TextBody;
+import org.apache.james.mime4j.parser.Field;
+import org.apache.james.mime4j.util.ByteSequence;
+import org.apache.james.mime4j.util.ContentUtil;
 import org.apache.james.mime4j.util.MimeUtil;
 
 /**
@@ -52,12 +51,26 @@ public class DsnMailCreator {
      * The DNS/HELO name of the MTA which attempts the transfer (i.e. this MTA).
      * It appears in the report.
      */
-    private String reportingMtaName;
+    private final String reportingMtaName;
     /**
      * The address used in the From header of the DSN message. Something like
      * MAILER-DAEMON@example.com.
      */
-    private NameAddr fromAddress;
+    private final NameAddr fromAddress;
+
+    /**
+     * Constructs a new instance which will create DSN messages using the
+     * specified common attributes.
+     * 
+     * @param reportingMtaName
+     *            The DNS/HELO name of this MTA. It appears in the report.
+     * @param fromAddress
+     *            The address used in the From header of the DSN mail.
+     */
+    public DsnMailCreator(String reportingMtaName, NameAddr fromAddress) {
+        this.reportingMtaName = reportingMtaName;
+        this.fromAddress = fromAddress;
+    }
 
     /**
      * Constructs a new DSN message.
@@ -71,21 +84,9 @@ public class DsnMailCreator {
         return new DsnMailCreatorInner(mail, recipientReports).create();
     }
 
-    /**
-     * Sets the DNS/HELO name of this MTA. It appears in the report.
-     */
-    public void setReportingMtaName(String reportingMtaName) {
-        this.reportingMtaName = reportingMtaName;
-    }
-
-    /**
-     * Sets the address used in the From header of the DSN mail.
-     */
-    public void setFromAddress(NameAddr fromAddress) {
-        this.fromAddress = fromAddress;
-    }
-
     private class DsnMailCreatorInner {
+        private final Mime4jFieldFactory mime4jFieldFactory =
+                new Mime4jFieldFactory();
         private final Mail originalMail;
         private final List<RecipientProblemReport> recipientReports;
         private final Mail resultMail = new Mail();
@@ -119,12 +120,17 @@ public class DsnMailCreator {
         }
 
         private Message message() {
-            MessageImpl message = new MessageImpl();
-            message.setDate(new Date());
+            Message message = new Message();
+            Mime4jHeaderBuilder headerBuilder =
+                    new Mime4jHeaderBuilder(mime4jFieldFactory);
+            headerBuilder.add("MIME-Version", "1.0");
+            headerBuilder.add("Date", new Date());
+            message.setHeader(headerBuilder.toHeader());
+
             message.createMessageId(reportingMtaName);
             message.setSubject("Delivery Status Notification");
             message.setFrom(fromAddress.toMime4jMailbox());
-            message.setTo(reversePathToMime4jMailbox(originalMail.from));
+            message.setTo(Mailbox.parse(originalMail.from.getSmtpText()));
 
             Multipart report = multipartReport();
             message.setMultipart(report,
@@ -132,18 +138,8 @@ public class DsnMailCreator {
             return message;
         }
 
-        private Mailbox reversePathToMime4jMailbox(ReversePath reversePath) {
-            try {
-                return AddressBuilder.DEFAULT.parseMailbox(reversePath
-                        .getSmtpText());
-            } catch (ParseException e) {
-                // impossible
-                throw new RuntimeException(e);
-            }
-        }
-
         private Multipart multipartReport() {
-            Multipart result = new MultipartImpl("report");
+            Multipart result = new Multipart("report");
             result.addBodyPart(humanReadableTextBodyPart());
             result.addBodyPart(deliveryStatusBodyPart());
             result.addBodyPart(originalMessageBodyPart());
@@ -152,8 +148,7 @@ public class DsnMailCreator {
 
         private BodyPart humanReadableTextBodyPart() {
             BodyPart result = new BodyPart();
-            TextBody textBody =
-                    new BasicBodyFactory().textBody(humanReadableText());
+            TextBody textBody = new BodyFactory().textBody(humanReadableText());
             result.setText(textBody);
             return result;
         }
@@ -189,7 +184,7 @@ public class DsnMailCreator {
         private BodyPart deliveryStatusBodyPart() {
             BodyPart result = new BodyPart();
             TextBody textBody =
-                    new BasicBodyFactory().textBody(deliveryStatusText());
+                    new BodyFactory().textBody(deliveryStatusText());
             result.setBody(textBody, "message/delivery-status");
             return result;
         }
@@ -287,7 +282,7 @@ public class DsnMailCreator {
 
         @Override
         public void writeTo(OutputStream out) throws IOException {
-            new DefaultMessageWriter().writeMessage(message, out);
+            message.writeTo(out);
         }
 
         @Override
@@ -300,6 +295,44 @@ public class DsnMailCreator {
             // not used
             throw new UnsupportedOperationException();
         }
+    }
+
+    private static class Mime4jFieldFactory {
+        private final DefaultFieldParser mime4jFieldParser =
+                new DefaultFieldParser();
+
+        private Field create(String name, String value) {
+            int usedCharacters = name.length() + 2;
+            String fieldValue =
+                    EncoderUtil.encodeIfNecessary(value,
+                            EncoderUtil.Usage.TEXT_TOKEN, usedCharacters);
+            String rawStr = MimeUtil.fold(name + ": " + fieldValue, 0);
+            ByteSequence raw = ContentUtil.encode(rawStr);
+            return mime4jFieldParser.parse(name, fieldValue, raw);
+        }
+    }
+
+    private static class Mime4jHeaderBuilder {
+        private final Mime4jFieldFactory mime4jFieldFactory;
+        private final Header header = new Header();
+
+        public Mime4jHeaderBuilder(Mime4jFieldFactory mime4jFieldFactory) {
+            this.mime4jFieldFactory = mime4jFieldFactory;
+        }
+
+        public void add(String name, String value) {
+            header.addField(mime4jFieldFactory.create(name, value));
+        }
+
+        public void add(String name, Date date) {
+            String value = new DateTimeRfc822Formatter().format(date);
+            header.addField(mime4jFieldFactory.create(name, value));
+        }
+
+        public Header toHeader() {
+            return header;
+        }
+
     }
 
     private static class HeaderPrinter {

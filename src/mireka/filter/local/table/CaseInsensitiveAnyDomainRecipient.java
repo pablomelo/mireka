@@ -20,8 +20,15 @@ public class CaseInsensitiveAnyDomainRecipient implements
     /**
      * @category GETSET
      */
-    public void setLocalPart(String localPart) {
-        this.localPart = new CaseInsensitiveLocalPartSpecification(localPart);
+    public CaseInsensitiveLocalPartSpecification getLocalPart() {
+        return localPart;
+    }
+
+    /**
+     * @category GETSET
+     */
+    public void setLocalPart(CaseInsensitiveLocalPartSpecification localPart) {
+        this.localPart = localPart;
     }
 
 }

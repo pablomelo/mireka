@@ -4,8 +4,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.inject.Inject;
-
 import mireka.address.NullReversePath;
 import mireka.address.Recipient;
 import mireka.address.ReversePath;
@@ -49,7 +47,6 @@ public class SrsDestination implements SessionDestination {
     /**
      * @category GETSET
      */
-    @Inject
     public void setSrs(Srs srs) {
         this.srs = srs;
     }
@@ -71,7 +68,6 @@ public class SrsDestination implements SessionDestination {
     /**
      * @category GETSET
      */
-    @Inject
     public void setTransmitter(Transmitter transmitter) {
         this.transmitter = transmitter;
     }
