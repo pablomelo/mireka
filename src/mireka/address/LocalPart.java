@@ -30,7 +30,7 @@ public class LocalPart {
      * Returns the escaped / quoted local-part string as received from the
      * remote SMTP client.
      */
-    public String smtpText() {
+    public String escapedName() {
         return receivedRawText;
     }
 

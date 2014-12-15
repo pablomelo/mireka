@@ -8,7 +8,6 @@ import java.util.List;
 import java.util.Map;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
 import mireka.filter.AbstractDataRecipientFilter;
 import mireka.filter.DataRecipientFilterAdapter;
 import mireka.filter.Filter;
@@ -47,7 +46,7 @@ public class DestinationProcessorFilter implements FilterType {
         }
 
         @Override
-        public void from(ReversePath from) {
+        public void from(String from) {
             mail.from = from;
             mail.receivedFromMtaAddress =
                     mailTransaction.getRemoteInetAddress();
@@ -117,13 +116,6 @@ public class DestinationProcessorFilter implements FilterType {
             }
         }
 
-        @Override
-        public void done() {
-            for (DestinationState destinationState : destinations.values()) {
-                destinationState.done();
-            }
-        }
-
         private abstract class DestinationState {
             final List<RecipientContext> recipientContexts =
                     new ArrayList<RecipientContext>();
@@ -133,11 +125,6 @@ public class DestinationProcessorFilter implements FilterType {
 
             abstract void data(Mail mail) throws RejectExceptionExt,
                     IOException;
-
-            /**
-             * Safely closes the session.
-             */
-            abstract void done();
         }
 
         private class MailDestinationState extends DestinationState {
@@ -157,11 +144,6 @@ public class DestinationProcessorFilter implements FilterType {
                 logger.debug("Sending {} recipients to {}",
                         recipientContexts.size(), destination);
                 destination.data(mail);
-            }
-
-            @Override
-            void done() {
-                // do nothing
             }
         }
 
@@ -191,16 +173,6 @@ public class DestinationProcessorFilter implements FilterType {
                 logger.debug("Sending data for {} recipients to {}",
                         recipientContexts.size(), destination);
                 session.data(mail);
-            }
-
-            @Override
-            void done() {
-                try {
-                    session.done();
-                } catch (RuntimeException e) {
-                    logger.error(
-                            "Cleanup of session failed for " + destination, e);
-                }
             }
         }
     }

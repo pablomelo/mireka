@@ -37,7 +37,7 @@ public class ProhibitRelaying extends StatelessFilterType {
 
     private FilterReply verifyRemotePartContainingRecipient(
             RemotePartContainingRecipient recipient) throws RejectException {
-        RemotePart remotePart = recipient.getMailbox().getRemotePart();
+        RemotePart remotePart = recipient.getAddress().getRemotePart();
         for (RemotePartSpecification remotePartSpecification : localDomainSpecifications) {
             if (remotePartSpecification.isSatisfiedBy(remotePart))
                 return FilterReply.NEUTRAL;
@@ -52,12 +52,5 @@ public class ProhibitRelaying extends StatelessFilterType {
         if (remotePartSpecification == null)
             throw new NullPointerException();
         localDomainSpecifications.add(remotePartSpecification);
-    }
-
-    public void setLocalDomainSpecifications(
-            List<RemotePartSpecification> specifications) {
-        this.localDomainSpecifications.clear();
-        for (RemotePartSpecification specification : specifications)
-            addLocalDomainSpecification(specification);
     }
 }

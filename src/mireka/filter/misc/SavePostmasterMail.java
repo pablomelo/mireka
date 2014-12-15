@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import javax.enterprise.context.Dependent;
+
 import mireka.MailData;
 import mireka.filter.RecipientContext;
 import mireka.filter.StatelessFilterType;
@@ -13,9 +15,10 @@ import mireka.filter.StatelessFilterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Dependent
 public class SavePostmasterMail extends StatelessFilterType {
-    private final Logger logger = LoggerFactory
-            .getLogger(SavePostmasterMail.class);
+    private final Logger logger =
+            LoggerFactory.getLogger(SavePostmasterMail.class);
     private File dir;
 
     @Override
@@ -48,7 +51,14 @@ public class SavePostmasterMail extends StatelessFilterType {
     /**
      * @category GETSET
      */
-    public void setDir(String dir) {
-        this.dir = new File(dir);
+    public File getDir() {
+        return dir;
+    }
+
+    /**
+     * @category GETSET
+     */
+    public void setDir(File dir) {
+        this.dir = dir;
     }
 }

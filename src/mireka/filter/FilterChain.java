@@ -3,7 +3,6 @@ package mireka.filter;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
 import mireka.smtp.RejectExceptionExt;
 
 import org.subethamail.smtp.TooMuchDataException;
@@ -11,7 +10,7 @@ import org.subethamail.smtp.TooMuchDataException;
 public interface FilterChain {
     void begin();
 
-    void from(ReversePath from) throws RejectExceptionExt;
+    void from(String from) throws RejectExceptionExt;
 
     FilterReply verifyRecipient(RecipientContext recipientContext)
             throws RejectExceptionExt;

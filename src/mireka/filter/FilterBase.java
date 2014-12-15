@@ -3,7 +3,6 @@ package mireka.filter;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
 import mireka.destination.UnknownRecipientDestination;
 import mireka.smtp.RejectExceptionExt;
 
@@ -21,7 +20,7 @@ public interface FilterBase {
 
     void begin();
 
-    void from(ReversePath from) throws RejectExceptionExt;
+    void from(String from) throws RejectExceptionExt;
 
     /**
      * Decides if a recipient should be accepted. The decision can be a final

@@ -5,18 +5,16 @@ import java.util.Arrays;
 import java.util.List;
 
 import mireka.address.Recipient;
-import mireka.smtp.SendException;
 import mireka.transmission.LocalMailSystemException;
 import mireka.transmission.Mail;
 import mireka.transmission.Transmitter;
-import mireka.transmission.dsn.DelayReport;
 import mireka.transmission.dsn.DsnMailCreator;
 import mireka.transmission.dsn.PermanentFailureReport;
-import mireka.transmission.dsn.RecipientProblemReport;
 import mireka.transmission.immediate.PostponeException;
 import mireka.transmission.immediate.RecipientRejection;
 import mireka.transmission.immediate.RecipientsWereRejectedException;
 import mireka.transmission.immediate.RemoteMtaErrorResponseException;
+import mireka.transmission.immediate.SendException;
 
 import org.joda.time.DateTime;
 import org.joda.time.Instant;
@@ -24,39 +22,24 @@ import org.joda.time.Period;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/**
- * RetryPolicy decides what actions are necessary after a transmission attempt
- * failed and executes those actions.
- */
 public class RetryPolicy {
     private final Logger logger = LoggerFactory.getLogger(RetryPolicy.class);
-    private List<Period> retryPeriods = Arrays.asList(Period.minutes(3),
-            Period.minutes(3), Period.minutes(9), Period.minutes(15),
-            Period.minutes(30), Period.hours(2),
+    private List<Period> retryPeriods = Arrays.asList(new Period[] {
+            Period.minutes(3), Period.minutes(27), Period.minutes(30),
             Period.hours(2), Period.hours(2), Period.hours(2), Period.hours(2),
             Period.hours(2), Period.hours(2), Period.hours(2), Period.hours(2),
-            Period.hours(2), Period.hours(3));
-    /**
-     * Elements indicates the count of failed delivery attempts after which a
-     * delayed DSN mail must be sent. For example 3 means that a DSN must be
-     * issued after the third failed attempt.
-     */
-    private final List<Integer> delayReportPoints = new ArrayList<Integer>();
+            Period.hours(2), Period.hours(2), Period.hours(3) });
     private DsnMailCreator dsnMailCreator;
     private Transmitter dsnTransmitter;
     private Transmitter retryTransmitter;
 
     /**
-     * Constructs a new empty instance, required attributes must be passed using
-     * the setter methods later.
+     * this constructor can be used with setter injection
      */
     public RetryPolicy() {
         // nothing to do
     }
 
-    /**
-     * Constructs a new instance with all required dependencies.
-     */
     public RetryPolicy(DsnMailCreator dsnMailCreator,
             Transmitter dsnTransmitter, Transmitter retryTransmitter) {
         this.dsnMailCreator = dsnMailCreator;
@@ -107,7 +90,7 @@ public class RetryPolicy {
             SendException sendException =
                     new SendException(
                             "Too much postponings of delivery attempt, attempt is considered to be a failure.",
-                            e, e.getEnhancedStatus());
+                            e, e.getEnhancedStatus(), e.getRemoteMta());
             EntireMailFailureHandler failureHandler =
                     new EntireMailFailureHandler(mail, sendException);
             failureHandler.onFailure();
@@ -123,22 +106,6 @@ public class RetryPolicy {
      */
     public void setRetryPeriods(List<Period> retryPeriods) {
         this.retryPeriods = retryPeriods;
-    }
-
-    /**
-     * @category GETSET
-     */
-    public void setDelayReportPoints(List<Integer> delayReportPoints) {
-        this.delayReportPoints.clear();
-        this.delayReportPoints.addAll(delayReportPoints);
-    }
-
-    /**
-     * @category GETSET
-     */
-    public void setDelayReportPoint(int index) {
-        this.delayReportPoints.clear();
-        this.delayReportPoints.add(index);
     }
 
     /**
@@ -207,13 +174,12 @@ public class RetryPolicy {
         protected final Mail mail;
 
         private List<SendingFailure> failures;
-        private final List<SendingFailure> permanentFailures =
+        private List<SendingFailure> permanentFailures =
                 new ArrayList<SendingFailure>();
-        private final List<SendingFailure> transientFailures =
+        private List<SendingFailure> transientFailures =
                 new ArrayList<SendingFailure>();
-        private final List<PermanentFailureReport> permanentFailureReports =
+        private List<PermanentFailureReport> permanentFailureReports =
                 new ArrayList<PermanentFailureReport>();
-        private final List<DelayReport> delayReports = new ArrayList<DelayReport>();
 
         public FailureHandler(Mail mail) {
             this.mail = mail;
@@ -225,8 +191,7 @@ public class RetryPolicy {
             failures = createFailures();
             separatePermanentAndTemporaryFailures();
             createPermanentFailureReports();
-            createDelayReports();
-            sendDsnMail();
+            bouncePermanentFailures();
             rescheduleTemporaryFailures();
         }
 
@@ -252,58 +217,39 @@ public class RetryPolicy {
 
         private void createPermanentFailureReports() {
             for (SendingFailure failure : permanentFailures) {
-                PermanentFailureReport report = new PermanentFailureReport();
-                fillInRecipientFailureReport(report, failure);
-                permanentFailureReports.add(report);
+                permanentFailureReports.add(createPermanentFailureReport(
+                        failure.recipient, failure.exception));
             }
         }
 
-        private void fillInRecipientFailureReport(
-                RecipientProblemReport report, SendingFailure failure) {
-            SendException exception = failure.exception;
-            report.recipient = failure.recipient;
-            report.status = exception.errorStatus();
-            if (exception instanceof RemoteMtaErrorResponseException) {
-                RemoteMtaErrorResponseException rmerException =
-                        (RemoteMtaErrorResponseException) exception;
-                report.remoteMta = rmerException.remoteMta();
-                report.remoteMtaDiagnosticStatus =
-                        rmerException.remoteMtaStatus();
-            }
-            report.failureDate = exception.failureDate;
-            report.logId = exception.getLogId();
+        private PermanentFailureReport createPermanentFailureReport(
+                Recipient recipient, SendException exception) {
+            PermanentFailureReport failure = new PermanentFailureReport();
+            failure.recipient = recipient;
+            failure.status = exception.errorStatus();
+            failure.remoteMta = exception.remoteMta();
+            if (exception instanceof RemoteMtaErrorResponseException)
+                failure.remoteMtaDiagnosticStatus =
+                        ((RemoteMtaErrorResponseException) exception)
+                                .remoteMtaStatus();
+            failure.failureDate = exception.failureDate;
+            failure.logId = exception.getLogId();
+            return failure;
         }
 
-        private void createDelayReports() {
-            if (!delayReportPoints.contains(mail.deliveryAttempts))
+        private void bouncePermanentFailures() throws LocalMailSystemException {
+            if (permanentFailureReports.isEmpty())
                 return;
-            for (SendingFailure failure : transientFailures) {
-                DelayReport report = new DelayReport();
-                fillInRecipientFailureReport(report, failure);
-                delayReports.add(report);
-            }
-        }
-
-        private void sendDsnMail() throws LocalMailSystemException {
-            List<RecipientProblemReport> reports =
-                    new ArrayList<RecipientProblemReport>();
-            reports.addAll(permanentFailureReports);
-            reports.addAll(delayReports);
-
-            if (reports.isEmpty())
-                return;
-            if (mail.from.isNull()) {
-                logger.error("Failure or delay, but reverse-path is null, "
+            if (mail.from.isEmpty()) {
+                logger.debug("Permanent failure, but reverse-path is null, "
                         + "DSN must not be sent. "
-                        + "Original mail itself was a notification. {}", mail.toString());
+                        + "Original mail itself was a notification.");
                 return;
             }
-            Mail dsnMail = dsnMailCreator.create(mail, reports);
+            Mail dsnMail = dsnMailCreator.create(mail, permanentFailureReports);
             dsnTransmitter.transmit(dsnMail);
-            logger.debug("DSN message is created with "
-                    + permanentFailureReports.size()
-                    + " permanent failures and " + delayReports.size()
-                    + " delays and passed to the DSN transmitter.");
+            logger.debug("Permanent failure, DSN message is created and passed "
+                    + "to the DSN transmitter.");
         }
 
         private void rescheduleTemporaryFailures()

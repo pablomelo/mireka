@@ -5,7 +5,6 @@ import static org.junit.Assert.*;
 
 import java.util.Map;
 
-import mireka.transmission.immediate.host.OutgoingConnectionsRegistry;
 import mockit.Deencapsulation;
 
 import org.junit.Test;

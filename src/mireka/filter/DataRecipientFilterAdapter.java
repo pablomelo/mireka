@@ -3,7 +3,6 @@ package mireka.filter;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
 import mireka.smtp.RejectExceptionExt;
 
 import org.subethamail.smtp.TooMuchDataException;
@@ -34,7 +33,7 @@ public final class DataRecipientFilterAdapter implements Filter {
     }
 
     @Override
-    public void from(ReversePath from) throws RejectExceptionExt {
+    public void from(String from) throws RejectExceptionExt {
         filter.from(from);
         chain.from(from);
     }

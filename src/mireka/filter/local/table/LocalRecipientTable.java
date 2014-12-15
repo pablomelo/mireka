@@ -17,7 +17,7 @@ public class LocalRecipientTable extends RecipientTable {
     public Destination lookup(Recipient recipient) {
         if (recipient instanceof RemotePartContainingRecipient) {
             RemotePart remotePart =
-                    ((RemotePartContainingRecipient) recipient).getMailbox()
+                    ((RemotePartContainingRecipient) recipient).getAddress()
                             .getRemotePart();
             if (!localDomains.isSatisfiedBy(remotePart))
                 return null;

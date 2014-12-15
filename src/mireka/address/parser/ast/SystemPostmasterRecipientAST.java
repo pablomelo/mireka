@@ -1,5 +1,6 @@
 package mireka.address.parser.ast;
 
+
 public class SystemPostmasterRecipientAST extends RecipientAST {
     public String postmasterSpelling;
 

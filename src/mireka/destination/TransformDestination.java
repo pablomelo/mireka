@@ -12,7 +12,6 @@ import javax.mail.internet.MimeMessage.RecipientType;
 
 import mireka.ConfigurationException;
 import mireka.address.MailAddressFactory;
-import mireka.address.ReversePath;
 import mireka.smtp.EnhancedStatus;
 import mireka.smtp.RejectExceptionExt;
 import mireka.transmission.LocalMailSystemException;
@@ -33,7 +32,7 @@ public class TransformDestination implements MailDestination {
             .getLogger(TransformDestination.class);
     private String subject;
     private String recipient;
-    private ReversePath reversePath;
+    private String reversePath;
     private String from;
     private Transmitter transmitter;
 
@@ -131,16 +130,14 @@ public class TransformDestination implements MailDestination {
      * @category GETSET
      */
     public String getReversePath() {
-        return reversePath.getSmtpText();
+        return reversePath;
     }
 
     /**
      * @category GETSET
      */
     public void setReversePath(String reversePath) {
-        this.reversePath =
-                new MailAddressFactory()
-                        .createReversePathAlreadyVerified(reversePath);
+        this.reversePath = reversePath;
     }
 
     /**

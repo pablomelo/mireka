@@ -16,7 +16,7 @@ public class DomainPostmasterSpecification implements RecipientSpecification {
         if (!(recipient instanceof DomainPostmaster))
             return false;
         RemotePart recipientRemotePart =
-                ((DomainPostmaster) recipient).getMailbox().getRemotePart();
+                ((DomainPostmaster) recipient).getAddress().getRemotePart();
         return remotePart.equals(recipientRemotePart);
     }
 

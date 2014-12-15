@@ -8,7 +8,7 @@ import mireka.address.RemotePart;
 import mireka.address.RemotePartContainingRecipient;
 
 /**
- * RegexAddressSpecification compares the local part of a recipient address with
+ * RegexAddressSpecification matches the local part of a recipient address with
  * a regular expression and it also requires the remote part to be identical
  * with the specified remote part.
  */
@@ -24,7 +24,7 @@ public class RegexAddressSpecification implements RecipientSpecification {
             return false;
 
         RemotePart recipientRemotePart =
-                ((RemotePartContainingRecipient) recipient).getMailbox()
+                ((RemotePartContainingRecipient) recipient).getAddress()
                         .getRemotePart();
         if (!remotePartObject.equals(recipientRemotePart))
             return false;

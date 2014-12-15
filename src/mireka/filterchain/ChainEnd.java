@@ -3,7 +3,6 @@ package mireka.filterchain;
 import java.io.IOException;
 
 import mireka.MailData;
-import mireka.address.ReversePath;
 import mireka.filter.FilterChain;
 import mireka.filter.FilterReply;
 import mireka.filter.MailTransaction;
@@ -26,7 +25,7 @@ class ChainEnd implements FilterChain {
     }
 
     @Override
-    public void from(ReversePath from) {
+    public void from(String from) {
         // do nothing
     }
 
@@ -37,8 +36,7 @@ class ChainEnd implements FilterChain {
     }
 
     @Override
-    public void recipient(RecipientContext recipientContext)
-            throws RejectException {
+    public void recipient(RecipientContext recipientContext) throws RejectException {
         // do nothing
     }
 

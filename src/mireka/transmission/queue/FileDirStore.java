@@ -335,8 +335,15 @@ public class FileDirStore {
     /**
      * @category GETSET
      */
-    public void setDir(String dir) {
-        this.dir = new File(dir);
+    public void setDir(File dir) {
+        this.dir = dir;
+    }
+
+    /**
+     * @category GETSET
+     */
+    public File getDir() {
+        return dir;
     }
 
     /**

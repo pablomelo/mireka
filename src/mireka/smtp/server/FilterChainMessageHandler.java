@@ -7,7 +7,6 @@ import java.text.ParseException;
 import mireka.ConfigurationException;
 import mireka.address.MailAddressFactory;
 import mireka.address.Recipient;
-import mireka.address.ReversePath;
 import mireka.destination.UnknownRecipientDestination;
 import mireka.filter.FilterReply;
 import mireka.filter.RecipientContext;
@@ -37,22 +36,10 @@ public class FilterChainMessageHandler implements MessageHandler {
     @Override
     public void from(String from) throws RejectException {
         try {
-            ReversePath reversePath = convertToReversePath(from);
-            filterChain.getHead().from(reversePath);
+            filterChain.getHead().from(from);
             mailTransaction.from = from;
         } catch (RejectExceptionExt e) {
             throw e.toRejectException();
-        }
-    }
-
-    private ReversePath convertToReversePath(String reversePath)
-            throws RejectException {
-        try {
-            return new MailAddressFactory().createReversePath(reversePath);
-        } catch (ParseException e) {
-            logger.debug("Syntax error in reverse path " + reversePath, e);
-            throw new RejectException(553, "Syntax error in reverse path "
-                    + reversePath);
         }
     }
 

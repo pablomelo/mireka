@@ -1,9 +1,17 @@
 package mireka.transmission.queue;
 
-/**
- * JMX interface definition for {@link TransmitterSummary}.
- */
 public interface TransmitterSummaryMBean {
+    int getMailTransactions();
+
+    int getSuccessfulMailTransactions();
+
+    int getFailures();
+
+    int getPartialFailures();
+
+    int getPermanentFailures();
+
+    int getTransientFailures();
 
     double getFailuresPercentage();
 
@@ -12,6 +20,8 @@ public interface TransmitterSummaryMBean {
     double getTransientFailuresPercentage();
 
     String getLastFailure();
+
+    int getErrors();
 
     String getLastError();
 }

@@ -1,5 +1,7 @@
 package mireka.filter.misc;
 
+import javax.annotation.concurrent.GuardedBy;
+
 import mireka.filter.AbstractFilter;
 import mireka.filter.Filter;
 import mireka.filter.FilterReply;
@@ -13,12 +15,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * The TarpitOnGlobalRejections filter slows down replies to RCPT command on all
- * connections if unknown recipients are submitted by a client.
+ * slows down replies to RCPT command on all connections
  */
 public class TarpitOnGlobalRejections implements FilterType {
-    private final Logger logger = LoggerFactory
-            .getLogger(TarpitOnGlobalRejections.class);
+    private final Logger logger =
+            LoggerFactory.getLogger(TarpitOnGlobalRejections.class);
+    @GuardedBy(value = "itself")
     private final Tarpit tarpit = new Tarpit();
 
     @Override

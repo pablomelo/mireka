@@ -1,6 +1,6 @@
 package mireka.server;
 
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 
@@ -12,10 +12,10 @@ import mireka.filter.local.AcceptAllRecipient;
 import mireka.filter.local.LookupDestinationFilter;
 import mireka.filter.local.table.RecipientSpecificationDestinationPair;
 import mireka.filter.local.table.RecipientSpecificationFactory;
+import mireka.filter.proxy.BackendServer;
 import mireka.filter.proxy.RelayDestination;
 import mireka.filterchain.Filters;
-import mireka.smtp.client.BackendServer;
-import mireka.smtp.client.ClientFactory;
+import mireka.smtp.ClientFactory;
 import mireka.smtp.server.MessageHandlerFactoryImpl;
 import mireka.smtp.server.SMTPServer;
 
@@ -66,8 +66,7 @@ public class ClientServerRelayTest {
                 .addRecipientSpecification(new RecipientSpecificationFactory()
                         .create(ExampleAddress.JANE));
         recipientDestinationMapper.setDestination(relayDestination);
-        LookupDestinationFilter lookupDestinationFilter =
-                new LookupDestinationFilter();
+        LookupDestinationFilter lookupDestinationFilter = new LookupDestinationFilter();
         lookupDestinationFilter
                 .setRecipientDestinationMapper(recipientDestinationMapper);
         filters.addFilter(lookupDestinationFilter);

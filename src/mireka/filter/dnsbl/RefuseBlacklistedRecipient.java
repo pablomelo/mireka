@@ -21,6 +21,12 @@ public class RefuseBlacklistedRecipient implements FilterType {
             "Rejected: unauthenticated e-mail from {0} is restricted. "
                     + "Contact the postmaster for details.");
 
+    public void addBlacklist(Dnsbl dnsbl) {
+        if (dnsbl == null)
+            throw new NullPointerException();
+        blacklists.add(dnsbl);
+    }
+
     @Override
     public Filter createInstance(MailTransaction mailTransaction) {
         DnsblsChecker dnsblChecker =
@@ -28,17 +34,6 @@ public class RefuseBlacklistedRecipient implements FilterType {
         FilterImpl filterInstance =
                 new FilterImpl(mailTransaction, dnsblChecker);
         return new DataRecipientFilterAdapter(filterInstance, mailTransaction);
-    }
-
-    public void addBlacklist(Dnsbl dnsbl) {
-        if (dnsbl == null)
-            throw new NullPointerException();
-        blacklists.add(dnsbl);
-    }
-
-    public void setBlacklists(List<Dnsbl> lists) {
-        this.blacklists.clear();
-        this.blacklists.addAll(lists);
     }
 
     private class FilterImpl extends AbstractDataRecipientFilter {

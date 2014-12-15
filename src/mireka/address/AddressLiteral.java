@@ -20,11 +20,6 @@ public class AddressLiteral implements RemotePart {
     }
 
     @Override
-    public String smtpText() {
-        return smtpText;
-    }
-
-    @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;

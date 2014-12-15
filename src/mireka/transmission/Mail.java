@@ -10,7 +10,6 @@ import javax.annotation.Nullable;
 
 import mireka.MailData;
 import mireka.address.Recipient;
-import mireka.address.ReversePath;
 
 /**
  * An SMTP mail object, which contains both an envelope and content.
@@ -19,8 +18,11 @@ import mireka.address.ReversePath;
  *      Simple Mail Transfer Protocol</a>
  */
 public class Mail {
+    /**
+     * empty string for null reverse-path
+     */
     @Nonnull
-    public ReversePath from;
+    public String from;
     @Nonnull
     public List<Recipient> recipients = new ArrayList<Recipient>();
     public MailData mailData;
@@ -82,10 +84,6 @@ public class Mail {
         return result;
     }
 
-    /**
-     * Returns a short descriptive information about the mail, useful for 
-     * logging. 
-     */
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();

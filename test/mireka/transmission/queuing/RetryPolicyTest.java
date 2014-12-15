@@ -1,15 +1,13 @@
 package mireka.transmission.queuing;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import mireka.ExampleAddress;
 import mireka.ExampleMail;
-import mireka.address.NullReversePath;
 import mireka.smtp.EnhancedStatus;
-import mireka.smtp.client.MtaAddress;
 import mireka.transmission.LocalMailSystemException;
 import mireka.transmission.Mail;
 import mireka.transmission.Transmitter;
@@ -17,6 +15,7 @@ import mireka.transmission.dsn.DsnMailCreator;
 import mireka.transmission.immediate.PostponeException;
 import mireka.transmission.immediate.RecipientRejection;
 import mireka.transmission.immediate.RecipientsWereRejectedException;
+import mireka.transmission.immediate.RemoteMta;
 import mireka.transmission.immediate.RemoteMtaErrorResponseException;
 import mockit.Expectations;
 import mockit.Mocked;
@@ -35,17 +34,16 @@ public class RetryPolicyTest {
     @Mocked
     private Transmitter dsnTransmitter;
     private RetryPolicy retryPolicy;
-    private final Mail mail = ExampleMail.simple();
-    private final RemoteMtaErrorResponseException permanentSendException =
+    private Mail mail = ExampleMail.simple();
+    private RemoteMtaErrorResponseException permanentSendException =
             new RemoteMtaErrorResponseException(new SMTPException(new Response(
-                    550, "Example error")), new MtaAddress("mail.example.com",
-                    ExampleAddress.IP_ADDRESS_ONLY));
-    private final RemoteMtaErrorResponseException transientSendException =
+                    550, "Example error")), new RemoteMta("mail.example.com"));
+    private RemoteMtaErrorResponseException transientSendException =
             new RemoteMtaErrorResponseException(new SMTPException(new Response(
-                    400, "Example temporary error")), new MtaAddress(
-                    "mail.example.com", ExampleAddress.IP_ADDRESS_ONLY));
-    private final PostponeException postponeException = new PostponeException(
-            30, EnhancedStatus.TRANSIENT_SYSTEM_NOT_ACCEPTING_NETWORK_MESSAGES,
+                    400, "Example temporary error")), new RemoteMta(
+                    "mail.example.com"));
+    private PostponeException postponeException = new PostponeException(30,
+            EnhancedStatus.TRANSIENT_SYSTEM_NOT_ACCEPTING_NETWORK_MESSAGES,
             "Test exception");
 
     @Before
@@ -80,33 +78,6 @@ public class RetryPolicyTest {
     }
 
     @Test
-    public void testDelayDsn() throws LocalMailSystemException {
-        retryPolicy.setDelayReportPoint(1);
-
-        new Expectations() {
-            {
-                onInstance(dsnTransmitter).transmit((Mail) any);
-                onInstance(retryTransmitter).transmit((Mail) any);
-            }
-        };
-
-        retryPolicy.actOnEntireMailFailure(mail, transientSendException);
-    }
-
-    @Test
-    public void testNoDelayDsn() throws LocalMailSystemException {
-        retryPolicy.setDelayReportPoint(2);
-
-        new Expectations() {
-            {
-                onInstance(retryTransmitter).transmit((Mail) any);
-            }
-        };
-
-        retryPolicy.actOnEntireMailFailure(mail, transientSendException);
-    }
-
-    @Test
     public void testOnEntireMailFailureGiveUp() throws LocalMailSystemException {
         mail.deliveryAttempts = 100;
         retryPolicy.actOnEntireMailFailure(mail, transientSendException);
@@ -121,7 +92,7 @@ public class RetryPolicyTest {
     @Test
     public void testOnEntireMailFailurePermanentNotification()
             throws LocalMailSystemException {
-        mail.from = new NullReversePath();
+        mail.from = "";
         retryPolicy.actOnEntireMailFailure(mail, permanentSendException);
 
         new Verifications() {

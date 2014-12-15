@@ -1,6 +1,6 @@
 package mireka;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
@@ -23,6 +23,7 @@ import mireka.login.GlobalUsers;
 import mireka.login.GlobalUsersLoginSpecification;
 import mireka.login.GlobalUsersMaildropDestinationMapper;
 import mireka.login.GlobalUsersPrincipalMaildropTable;
+import mireka.login.Username;
 import mireka.pop.PopServer;
 import mireka.pop.store.MaildropRepository;
 import mireka.smtp.server.MessageHandlerFactoryImpl;
@@ -99,12 +100,12 @@ public class MxPopTest extends TempDirectory {
     private void initCommonConfiguration() {
         users = new GlobalUsers();
         GlobalUser user = new GlobalUser();
-        user.setUsername("john");
+        user.setUsername(new Username("john"));
         user.setPassword("secret");
         users.addUser(user);
 
         maildropRepository = new MaildropRepository();
-        maildropRepository.setDir(directory.getPath());
+        maildropRepository.setDir(directory);
     }
 
     private SMTPServer createSmtpServer() {

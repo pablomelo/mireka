@@ -14,6 +14,10 @@ public class RecipientSpecifications implements RecipientSpecification {
     private List<RecipientSpecification> specifications =
             new ArrayList<RecipientSpecification>();
 
+    public void addSpecification(RecipientSpecification specification) {
+        specifications.add(specification);
+    }
+
     @Override
     public boolean isSatisfiedBy(Recipient recipient) {
         for (RecipientSpecification specification : specifications) {
@@ -21,10 +25,5 @@ public class RecipientSpecifications implements RecipientSpecification {
                 return true;
         }
         return false;
-    }
-
-    public void setSpecifications(List<RecipientSpecification> specifications) {
-        this.specifications.clear();
-        this.specifications.addAll(specifications);
     }
 }

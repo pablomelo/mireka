@@ -5,11 +5,11 @@ import java.util.Arrays;
 import java.util.Collections;
 
 import javax.annotation.concurrent.Immutable;
-import javax.annotation.concurrent.ThreadSafe;
+import javax.annotation.concurrent.NotThreadSafe;
 
 import mireka.address.Domain;
 import mireka.smtp.EnhancedStatus;
-import mireka.smtp.SendException;
+import mireka.transmission.immediate.SendException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,14 +19,19 @@ import org.xbill.DNS.Name;
 import org.xbill.DNS.Record;
 
 /**
- * The MxLookup class determines the MTA servers responsible from a domain by
- * querying the MX records from the DNS system.
+ * This class wraps DNS query functionality in order to make unit testing
+ * easier.
  */
-@ThreadSafe
+@NotThreadSafe
 public class MxLookup {
     private static MXRecordPriorityComparator mxRecordPriorityComparator =
             new MXRecordPriorityComparator();
     private final Logger logger = LoggerFactory.getLogger(MxLookup.class);
+    private final Domain domain;
+
+    public MxLookup(Domain domain) {
+        this.domain = domain;
+    }
 
     /**
      * Returns an ordered host name list based on the MX records of the domain.
@@ -37,14 +42,14 @@ public class MxLookup {
      * @see <a href="http://tools.ietf.org/html/rfc5321#section-5.1">RFC 5321
      *      Simple Mail Transfer Protocol - Locating the Target Host</a>
      */
-    public Name[] queryMxTargets(Domain domain) throws MxLookupException {
-        MXRecord[] records = queryMxRecords(domain);
+    public Name[] queryMxTargets() throws MxLookupException {
+        MXRecord[] records = queryMxRecords();
         if (records.length == 0) {
             logger.debug("Domain {} has no MX records, using an implicit "
                     + "MX record targetting the host", domain);
-            return implicitMxTargetForDomain(domain);
+            return implicitMxTargetForDomain();
         } else {
-            //
+            // 
             ArrayList<MXRecord> list =
                     new ArrayList<MXRecord>(Arrays.asList(records));
             Collections.shuffle(list);
@@ -57,7 +62,7 @@ public class MxLookup {
     }
 
     /**
-     * Looks up MX records in the DNS system
+     * looks up MX records in the DNS system
      * 
      * @param domain
      * @return an empty array if no MX record was found
@@ -66,11 +71,11 @@ public class MxLookup {
      *             the domain is not registered or the DNS servers are not
      *             accessible or any other DNS related problem
      */
-    private MXRecord[] queryMxRecords(Domain domain) throws MxLookupException {
-        Lookup lookup;
+    private MXRecord[] queryMxRecords() throws MxLookupException {
+        org.xbill.DNS.Lookup lookup;
 
         try {
-            lookup = new Lookup(domain.smtpText(), org.xbill.DNS.Type.MX);
+            lookup = new Lookup(domain.asString(), org.xbill.DNS.Type.MX);
         } catch (org.xbill.DNS.TextParseException e) {
             throw new MxLookupException(e,
                     EnhancedStatus.BAD_DESTINATION_MAILBOX_ADDRESS_SYNTAX);
@@ -108,7 +113,7 @@ public class MxLookup {
         return records;
     }
 
-    private Name[] implicitMxTargetForDomain(Domain domain) {
+    private Name[] implicitMxTargetForDomain() {
         Name[] singletonNames = new Name[] { domain.toName() };
         return singletonNames;
     }
@@ -126,7 +131,6 @@ public class MxLookup {
     @Immutable
     private static class MXRecordPriorityComparator implements
             java.util.Comparator<MXRecord> {
-        @Override
         public int compare(MXRecord o1, MXRecord o2) {
             int p1 = o1.getPriority();
             int p2 = o2.getPriority();
